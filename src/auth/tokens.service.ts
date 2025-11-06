@@ -9,7 +9,7 @@ import { Injectable } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, IsNull } from 'typeorm';
 import { RefreshToken } from './entity/refresh-token.entity';
 import { JwtPayload } from './dto/login-response.dto';
 import { User } from '../users/entity/users.entity';
@@ -66,16 +66,26 @@ export class TokensService {
    * Save refresh token to database
    */
   private async saveRefreshToken(userId: number, token: string, userAgent?: string): Promise<void> {
-    // Check if there's an existing refresh token for this user and user-agent that's not expired
-    const existingToken = await this.refreshTokenRepository
-      .createQueryBuilder('refresh_token')
-      .where('refresh_token.user_id = :userId', { userId })
-      .andWhere('refresh_token.user_agent = :userAgent', { userAgent: userAgent || null })
-      .andWhere('refresh_token.expires_at > :now', { now: new Date() })
-      .getOne();
+    // Build where condition for finding existing token
+    const whereCondition: any = {
+      user_id: userId,
+      is_active: true,
+    };
+    
+    // Handle user_agent properly (null vs undefined vs string)
+    if (userAgent) {
+      whereCondition.user_agent = userAgent;
+    } else {
+      whereCondition.user_agent = IsNull();
+    }
 
-    if (existingToken) {
-      // If token exists and is still valid, just reactivate it with new token
+    // Check if there's an existing refresh token for this user and user-agent that's not expired
+    const existingToken = await this.refreshTokenRepository.findOne({
+      where: whereCondition,
+    });
+
+    if (existingToken && existingToken.expires_at > new Date()) {
+      // If token exists and is still valid, just update it with new token
       await this.refreshTokenRepository.update(
         { id: existingToken.id },
         { 
@@ -84,10 +94,20 @@ export class TokensService {
         }
       );
     } else {
-      // Delete all old refresh tokens for this user (both active and inactive)
-      await this.refreshTokenRepository.delete({
-        user_id: userId
-      });
+      // Build where condition for deleting old tokens
+      const deleteCondition: any = {
+        user_id: userId,
+      };
+      
+      // Handle user_agent properly for deletion
+      if (userAgent) {
+        deleteCondition.user_agent = userAgent;
+      } else {
+        deleteCondition.user_agent = IsNull();
+      }
+
+      // Delete old refresh tokens for this specific user and user-agent combination
+      await this.refreshTokenRepository.delete(deleteCondition);
 
       // Calculate expiration date
       const expiresIn = this.configService.get<number>('JWT_REFRESH_EXPIRES_IN_SECONDS') || 7 * 24 * 60 * 60; // 7 days in seconds

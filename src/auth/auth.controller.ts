@@ -12,6 +12,7 @@ import type { Request } from 'express';
 import { AuthService } from './auth.service';
 import { LoginDto } from './dto/login.dto';
 import { CreateRootDto } from './dto/create-root.dto';
+import { JwtPayload } from './dto/login-response.dto';
 import { Public } from './decorators/public.decorator';
 import { ConfigService } from '@nestjs/config';
 
@@ -42,6 +43,22 @@ export class AuthController {
     }
 
     return await this.authService.createRoot(createRootDto);
+  }
+
+  @Get('verify')
+  verifyToken(@Req() req: Request & { user: JwtPayload }) {
+    // Token đã được verify bởi JWT Guard
+    // Trả về thông tin user từ request
+    const user = req.user;
+    return {
+      user: {
+        id: user.sub,
+        username: user.username,
+        email: user.email,
+        role: user.role,
+        is_verified: user.is_verified,
+      },
+    };
   }
 
   @Get('health')

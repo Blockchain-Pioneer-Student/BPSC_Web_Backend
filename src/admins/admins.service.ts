@@ -4,7 +4,7 @@ import { AdminsRepository } from './admins.repository';
 import { UsersService } from '../users/users.service';
 import { CreateAdminDto } from './dto/create-admin.dto';
 import { Admin } from './entity/admins.entity';
-import * as bcrypt from 'bcrypt';
+
 
 @Injectable()
 export class AdminsService {
@@ -34,17 +34,14 @@ export class AdminsService {
     }
 
     try {
-      // Hash password
-      const hashedPassword = await bcrypt.hash(password, 10);
+      // Get admin role (role id 2 is admin, root is 1)
+      const adminRoleId = 2; // Admin role
 
-      // Get admin role (assuming role id 2 is admin)
-      const adminRoleId = 2; // You might want to get this from roles service
-
-      // Create user first
+      // Create user first - UsersService will handle password hashing
       const user = await this.usersService.create({
         username,
         email,
-        password: hashedPassword,
+        password, // Don't hash here, let UsersService handle it
         role_id: adminRoleId,
         is_verified: true, // Admin accounts are verified by default
       });

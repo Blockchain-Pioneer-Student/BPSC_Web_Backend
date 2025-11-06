@@ -93,12 +93,13 @@ export class EventsService {
           createEventDto.image_file.size,
           createEventDto.image_file.mimetype,
         );
+        console.log(uploadResult);
         imageUrl = uploadResult.url;
       }
 
       const newEvent = {
         ...createEventDto,
-        image_url: imageUrl, // Use the uploaded image URL in a new property
+        image: imageUrl, // Use the uploaded image URL in a new property
       };
 
       // Save the event to the repository
