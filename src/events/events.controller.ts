@@ -23,10 +23,14 @@ import { singleFileOptions } from 'src/middleware/multer.middleware';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
+import { Public } from '../auth/decorators/public.decorator';
+
 @Controller('events')
+@UseGuards(JwtAuthGuard, RolesGuard)
 export class EventsController {
   constructor(private readonly eventsService: EventsService) {}
 
+  @Public()
   @Get('get-all')
   async getAllEvents(
     @Query('sort') sort?: string,
@@ -43,42 +47,47 @@ export class EventsController {
     );
   }
 
+  @Public()
   @Get('categories')
   async getAllCategories(): Promise<EventCategory[]> {
     return await this.eventsService.getAllCategories();
   }
 
+  @Public()
   @Get('categories/:id')
   async getCategoryById(@Param('id') id: string): Promise<EventCategory> {
     const categoryId = parseInt(id, 10);
     return await this.eventsService.getCategoryById(categoryId);
   }
 
-  @Post(':id/views')
-  async incrementViews(@Param('id') id: string): Promise<{ message: string }> {
-    const eventId = parseInt(id, 10);
-    await this.eventsService.incrementEventViews(eventId);
+  @Public()
+  @Post('uuid/:uuid/views')
+  async incrementViewsByUuid(@Param('uuid') uuid: string): Promise<{ message: string }> {
+    await this.eventsService.incrementEventViewsByUuid(uuid);
     return { message: 'Views incremented successfully' };
   }
 
-  @Post(':id/likes')
-  async incrementLikes(@Param('id') id: string): Promise<{ message: string }> {
-    const eventId = parseInt(id, 10);
-    await this.eventsService.incrementEventLikes(eventId);
+  @Public()
+  @Post('uuid/:uuid/likes')
+  async incrementLikesByUuid(@Param('uuid') uuid: string): Promise<{ message: string }> {
+    await this.eventsService.incrementEventLikesByUuid(uuid);
     return { message: 'Likes incremented successfully' };
   }
 
-  @Post(':id/comments')
-  async incrementComments(
-    @Param('id') id: string,
-  ): Promise<{ message: string }> {
-    const eventId = parseInt(id, 10);
-    await this.eventsService.incrementEventComments(eventId);
+  @Public()
+  @Post('uuid/:uuid/comments')
+  async incrementCommentsByUuid(@Param('uuid') uuid: string): Promise<{ message: string }> {
+    await this.eventsService.incrementEventCommentsByUuid(uuid);
     return { message: 'Comments incremented successfully' };
   }
 
+  @Post('backfill-uuids')
+  @Roles('admin')
+  async backfillEventUuids(): Promise<{ updated: number; message: string }> {
+    return await this.eventsService.backfillEventUuids();
+  }
+
   @Post('create')
-  @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('admin')
   @UseInterceptors(FileInterceptor('image_file', singleFileOptions))
   async createEvent(
@@ -97,7 +106,6 @@ export class EventsController {
   }
 
   @Patch('update/:id')
-  @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('admin')
   @UseInterceptors(FileInterceptor('image_file', singleFileOptions))
   async updateEvent(
@@ -137,7 +145,6 @@ export class EventsController {
 
   
   @Delete(':id')
-  @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('admin')
   async deleteEvent(@Param('id') id: string): Promise<any> {
     try {
@@ -157,9 +164,10 @@ export class EventsController {
     }
   }
 
-  @Get(':id')
-  async getEventById(@Param('id') id: string): Promise<any> {
-    const eventId = parseInt(id, 10);
-    return await this.eventsService.getEventById(eventId);
+  @Public()
+  @Get('uuid/:uuid')
+  async getEventByUuid(@Param('uuid') uuid: string): Promise<any> {
+    return await this.eventsService.getEventByUuid(uuid);
   }
+
 }

@@ -23,18 +23,18 @@ export class EventsService {
     return await this.eventsRepository.findAllEvents(sort, limit, category, search);
   }
 
-  async getEventById(id: number): Promise<any> {
+  async getEventByUuid(event_uuid: string): Promise<any> {
     // Find the event with category relation
-    const event = await this.eventsRepository.findEventById(id);
+    const event = await this.eventsRepository.findEventByUuid(event_uuid);
     
     if (!event) {
-      throw new NotFoundException(`Event with ID ${id} not found`);
+      throw new NotFoundException(`Event with UUID ${event_uuid} not found`);
     }
 
-    // Get schedules and speakers
+    // Get schedules and speakers using event ID
     const [schedules, speakers] = await Promise.all([
-      this.eventsRepository.findEventSchedulesByEventId(id),
-      this.eventsRepository.findEventSpeakersByEventId(id),
+      this.eventsRepository.findEventSchedulesByEventId(event.id),
+      this.eventsRepository.findEventSpeakersByEventId(event.id),
     ]);
 
     return {
@@ -49,6 +49,10 @@ export class EventsService {
     return await this.eventsRepository.findAllCategories();
   }
 
+  async backfillEventUuids(): Promise<{ updated: number; message: string }> {
+    return await this.eventsRepository.backfillUuids();
+  }
+
   async getCategoryById(id: number): Promise<any> {
     const category = await this.eventsRepository.findCategoryById(id);
     if (!category) {
@@ -56,29 +60,29 @@ export class EventsService {
     }
     return category;
   }
-
-  async incrementEventViews(id: number): Promise<void> {
-    const event = await this.eventsRepository.findEventById(id);
+  
+  async incrementEventViewsByUuid(event_uuid: string): Promise<void> {
+    const event = await this.eventsRepository.findEventByUuid(event_uuid);
     if (!event) {
-      throw new NotFoundException(`Event with ID ${id} not found`);
+      throw new NotFoundException(`Event with UUID ${event_uuid} not found`);
     }
-    await this.eventsRepository.incrementViews(id);
+    await this.eventsRepository.incrementViews(event.id);
   }
 
-  async incrementEventLikes(id: number): Promise<void> {
-    const event = await this.eventsRepository.findEventById(id);
+  async incrementEventLikesByUuid(event_uuid: string): Promise<void> {
+    const event = await this.eventsRepository.findEventByUuid(event_uuid);
     if (!event) {
-      throw new NotFoundException(`Event with ID ${id} not found`);
+      throw new NotFoundException(`Event with UUID ${event_uuid} not found`);
     }
-    await this.eventsRepository.incrementLikes(id);
+    await this.eventsRepository.incrementLikes(event.id);
   }
 
-  async incrementEventComments(id: number): Promise<void> {
-    const event = await this.eventsRepository.findEventById(id);
+  async incrementEventCommentsByUuid(event_uuid: string): Promise<void> {
+    const event = await this.eventsRepository.findEventByUuid(event_uuid);
     if (!event) {
-      throw new NotFoundException(`Event with ID ${id} not found`);
+      throw new NotFoundException(`Event with UUID ${event_uuid} not found`);
     }
-    await this.eventsRepository.incrementComments(id);
+    await this.eventsRepository.incrementComments(event.id);
   }
 
   async createEvent(createEventDto: CreateEventDto): Promise<any> {

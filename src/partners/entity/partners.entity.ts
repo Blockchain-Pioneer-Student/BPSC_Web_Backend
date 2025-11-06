@@ -1,26 +1,39 @@
-import {
-  Entity,
-  PrimaryGeneratedColumn,
-  Column,
-  CreateDateColumn,
-  UpdateDateColumn,
-} from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column } from 'typeorm';
+
+export enum PartnerType {
+  ACADEMIC = 'academic',
+  BUSINESS = 'business',
+  COMMUNITY = 'community',
+  GOVERNMENT = 'government',
+  TECHNOLOGY = 'technology',
+}
+
+export enum PartnerStatus {
+  ACTIVE = 'active',
+  INACTIVE = 'inactive',
+  PENDING = 'pending',
+}
 
 @Entity('partners')
 export class Partner {
   @PrimaryGeneratedColumn()
   id: number;
 
-  @Column({ type: 'varchar', length: 255 })
+  @Column({ type: 'varchar', length: 255, nullable: false })
   name: string;
 
-  @Column({ type: 'text' })
+  @Column({ type: 'text', nullable: false })
   logo: string;
 
-  @Column({ type: 'varchar', length: 50 })
+  @Column({
+    type: 'enum',
+    enum: PartnerType,
+    nullable: false,
+    enumName: 'partner_type_enum',
+  })
   type: PartnerType;
 
-  @Column({ type: 'text' })
+  @Column({ type: 'text', nullable: false })
   description: string;
 
   @Column({ type: 'text', nullable: true })
@@ -35,26 +48,27 @@ export class Partner {
   @Column({ type: 'text', nullable: true })
   address?: string;
 
-  @Column({ type: 'varchar', length: 20 })
+  @Column({
+    type: 'enum',
+    enum: PartnerStatus,
+    nullable: false,
+    default: PartnerStatus.ACTIVE,
+    enumName: 'partner_status_enum',
+  })
   status: PartnerStatus;
 
-  @CreateDateColumn()
+  @Column({
+    type: 'timestamp',
+    default: () => 'CURRENT_TIMESTAMP',
+    nullable: false,
+  })
   created_at: Date;
 
-  @UpdateDateColumn()
+  @Column({
+    type: 'timestamp',
+    default: () => 'CURRENT_TIMESTAMP',
+    onUpdate: 'CURRENT_TIMESTAMP',
+    nullable: false,
+  })
   updated_at: Date;
-}
-
-export enum PartnerType {
-  ACADEMIC = 'academic',
-  BUSINESS = 'business',
-  COMMUNITY = 'community',
-  GOVERNMENT = 'government',
-  TECHNOLOGY = 'technology',
-}
-
-export enum PartnerStatus {
-  ACTIVE = 'active',
-  INACTIVE = 'inactive',
-  PENDING = 'pending',
 }

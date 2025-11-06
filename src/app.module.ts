@@ -10,6 +10,11 @@ import { EventsModule } from './events/events.module';
 import { PartnersModule } from './partners/partners.module';
 import { AdminsModule } from './admins/admins.module';
 import { AuthModule } from './auth/auth.module';
+import { BoardsModule } from './boards/boards.module';
+import { MembersModule } from './members/members.module';
+import { ContactsModule } from './contacts/contacts.module';
+import { RegistrationsModule } from './registrations/registrations.module';
+import { BlockchainAreasModule } from './blockchain_areas/blockchain_areas.module';
 @Module({
   imports: [
     // Config module để đọc .env
@@ -21,7 +26,7 @@ import { AuthModule } from './auth/auth.module';
     ThrottlerModule.forRoot([
       {
         ttl: 60000, // 60 seconds
-        limit: 100, // 10 requests
+        limit: 1000, // 10 requests
       },
     ]),
     
@@ -32,7 +37,7 @@ import { AuthModule } from './auth/auth.module';
         type: 'postgres',
         url: configService.get<string>('DATABASE_URL'),
         entities: [__dirname + '/**/*.entity{.ts,.js}'],
-        synchronize: false, // Tắt auto-sync để tránh conflict với DB hiện có
+        synchronize: false, // Bật để tự động tạo bảng
         ssl:
           process.env.NODE_ENV === 'production'
             ? { rejectUnauthorized: false }
@@ -46,6 +51,11 @@ import { AuthModule } from './auth/auth.module';
     PartnersModule,
     AdminsModule,
     AuthModule,
+    BoardsModule,
+    MembersModule,
+    ContactsModule,
+    RegistrationsModule,
+    BlockchainAreasModule,
   ],
   controllers: [AppController],
   providers: [

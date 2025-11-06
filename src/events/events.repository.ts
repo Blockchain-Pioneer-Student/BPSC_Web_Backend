@@ -1,10 +1,14 @@
+/* eslint-disable @typescript-eslint/no-unsafe-argument */
+/* eslint-disable @typescript-eslint/no-unsafe-member-access */
+/* eslint-disable @typescript-eslint/no-unsafe-call */
 /* eslint-disable @typescript-eslint/no-unsafe-return */
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
 /* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable prettier/prettier */
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, IsNull } from 'typeorm';
+import { randomUUID } from 'crypto';
 import { Event } from './entity/events.entity';
 import { EventCategory } from './entity/event_categories.entity';
 import { EventSchedule } from './entity/event_schedules.entity';
@@ -89,6 +93,13 @@ export class EventsRepository {
     });
   }
 
+  async findEventByUuid(event_uuid: string): Promise<Event | null> {
+    return await this.eventRepository.findOne({
+      where: { event_uuid },
+      relations: ['category']
+    });
+  }
+
   async findEventSchedulesByEventId(eventId: number): Promise<EventSchedule[]> {
     return await this.eventScheduleRepository.find({
       where: { event_id: eventId },
@@ -126,6 +137,7 @@ export class EventsRepository {
 
     const event = this.eventRepository.create({
       ...dto,
+      event_uuid: randomUUID(),
       schedules,
       speakers,
     });
@@ -189,6 +201,29 @@ export class EventsRepository {
   async deleteEvent(id: number): Promise<boolean> {
     const result = await this.eventRepository.delete(id);
     return (result.affected || 0) > 0;
+  }
+
+  async backfillUuids(): Promise<{ updated: number; message: string }> {
+    // Find all events without UUID
+    const eventsWithoutUuid = await this.eventRepository.find({
+      where: { event_uuid: IsNull() }
+    });
+
+    if (eventsWithoutUuid.length === 0) {
+      return { updated: 0, message: 'No events need UUID backfill' };
+    }
+
+    // Update each event with a new UUID
+    for (const event of eventsWithoutUuid) {
+      await this.eventRepository.update(event.id, {
+        event_uuid: randomUUID()
+      });
+    }
+
+    return { 
+      updated: eventsWithoutUuid.length, 
+      message: `Successfully updated ${eventsWithoutUuid.length} events with UUIDs` 
+    };
   }
 
   async createCategory(categoryData: Partial<EventCategory>): Promise<EventCategory> {

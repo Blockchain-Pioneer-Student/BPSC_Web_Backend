@@ -17,6 +17,9 @@ export class Event {
   @PrimaryGeneratedColumn()
   id: number;
 
+  @Column({ type: 'uuid', nullable: false, unique: true })
+  event_uuid: string;
+
   @Column({ type: 'varchar', length: 255, nullable: false })
   title: string;
 
