@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-unsafe-assignment */
+/* eslint-disable prettier/prettier */
 /* eslint-disable @typescript-eslint/no-unsafe-return */
 import {
   Controller,
@@ -5,6 +7,8 @@ import {
   Query,
   Param,
   Post,
+  Patch,
+  Delete,
   Body,
   UploadedFile,
   UseInterceptors,
@@ -13,7 +17,7 @@ import {
 import { EventsService } from './events.service';
 import { Event } from './entity/events.entity';
 import { EventCategory } from './entity/event_categories.entity';
-import type { CreateEventDto } from './interface/create-event.interface';
+import type { CreateEventDto, UpdateEventDto } from './interface/create-event.interface';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { singleFileOptions } from 'src/middleware/multer.middleware';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
@@ -48,12 +52,6 @@ export class EventsController {
   async getCategoryById(@Param('id') id: string): Promise<EventCategory> {
     const categoryId = parseInt(id, 10);
     return await this.eventsService.getCategoryById(categoryId);
-  }
-
-  @Get(':id')
-  async getEventById(@Param('id') id: string): Promise<any> {
-    const eventId = parseInt(id, 10);
-    return await this.eventsService.getEventById(eventId);
   }
 
   @Post(':id/views')
@@ -96,5 +94,72 @@ export class EventsController {
     const eventWithFile = { ...createEventDto, image_file };
     // console.log(eventWithFile);
     return await this.eventsService.createEvent(eventWithFile);
+  }
+
+  @Patch('update/:id')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('admin')
+  @UseInterceptors(FileInterceptor('image_file', singleFileOptions))
+  async updateEvent(
+    @Param('id') id: string,
+    @Body() updateEventDto: UpdateEventDto,
+    @UploadedFile()
+    image_file?: {
+      path: string;
+      originalname: string;
+      size: number;
+      mimetype: string;
+    },
+  ): Promise<any> {
+    try {
+      const eventId = parseInt(id, 10);
+      const eventWithFile: UpdateEventDto = {
+        ...updateEventDto,
+        ...(image_file && { image_file }),
+      };
+      
+      console.log('Updating event:', eventId, 'with data:', eventWithFile);
+      
+      const result = await this.eventsService.updateEvent(
+        eventId,
+        eventWithFile,
+      );
+      return {
+        success: true,
+        message: 'Event updated successfully',
+        data: result,
+      };
+    } catch (error) {
+      console.error('Error in updateEvent controller:', error);
+      throw error;
+    }
+  }
+
+  
+  @Delete(':id')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('admin')
+  async deleteEvent(@Param('id') id: string): Promise<any> {
+    try {
+      const eventId = parseInt(id, 10);
+      
+      console.log('Deleting event:', eventId);
+      
+      const result = await this.eventsService.deleteEvent(eventId);
+      return {
+        success: true,
+        message: 'Event deleted successfully',
+        data: result,
+      };
+    } catch (error) {
+      console.error('Error in deleteEvent controller:', error);
+      throw error;
+    }
+  }
+
+  @Get(':id')
+  async getEventById(@Param('id') id: string): Promise<any> {
+    const eventId = parseInt(id, 10);
+    return await this.eventsService.getEventById(eventId);
   }
 }

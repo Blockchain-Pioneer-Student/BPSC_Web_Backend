@@ -9,7 +9,7 @@ import { Event } from './entity/events.entity';
 import { EventCategory } from './entity/event_categories.entity';
 import { EventSchedule } from './entity/event_schedules.entity';
 import { EventSpeaker } from './entity/event_speakers.entity';
-import { CreateEventDto } from './interface/create-event.interface' // Import the CreateEventData DTO
+import { CreateEventDto, UpdateEventDto } from './interface/create-event.interface' // Import the CreateEventData DTO
 
 // Extend the Event type to include optional speakers and schedules
 @Injectable()
@@ -133,9 +133,57 @@ export class EventsRepository {
     return await this.eventRepository.save(event);
   }
 
-  async updateEvent(id: number, eventData: Partial<Event>): Promise<Event | null> {
-    await this.eventRepository.update(id, eventData);
-    return await this.findEventById(id);
+  async updateEvent(id: number, dto: UpdateEventDto): Promise<Event | null> {
+    try {
+      // Separate relational data from basic fields
+      const { schedules, speakers, image_file, ...basicFields } = dto;
+      
+      // Update basic fields first (excluding relations and files)
+      if (Object.keys(basicFields).length > 0) {
+        await this.eventRepository.update(id, basicFields);
+      }
+
+      // Handle schedules update
+      if (schedules !== undefined) {
+        // First, delete existing schedules for this event
+        await this.eventScheduleRepository.delete({ event: { id } });
+        
+        // Then create new schedules if any
+        if (schedules.length > 0) {
+          const parsedSchedules = typeof schedules === 'string' ? JSON.parse(schedules) : schedules;
+          const scheduleEntities = parsedSchedules.map(schedule => 
+            this.eventScheduleRepository.create({
+              ...schedule,
+              event: { id } as Event,
+            })
+          );
+          await this.eventScheduleRepository.save(scheduleEntities);
+        }
+      }
+
+      // Handle speakers update
+      if (speakers !== undefined) {
+        // First, delete existing speakers for this event
+        await this.eventSpeakerRepository.delete({ event: { id } });
+        
+        // Then create new speakers if any
+        if (speakers.length > 0) {
+          const parsedSpeakers = typeof speakers === 'string' ? JSON.parse(speakers) : speakers;
+          const speakerEntities = parsedSpeakers.map(speaker => 
+            this.eventSpeakerRepository.create({
+              ...speaker,
+              event: { id } as Event,
+            })
+          );
+          await this.eventSpeakerRepository.save(speakerEntities);
+        }
+      }
+      
+      return await this.findEventById(id);
+    } catch (error) {
+      console.error('Error in updateEvent:', error);
+      throw error;
+    }
   }
 
   async deleteEvent(id: number): Promise<boolean> {
@@ -200,5 +248,14 @@ export class EventsRepository {
 
   async incrementComments(id: number): Promise<void> {
     await this.eventRepository.increment({ id }, 'comments', 1);
+  }
+
+  // Delete methods for related entities
+  async deleteEventSchedules(eventId: number): Promise<void> {
+    await this.eventScheduleRepository.delete({ event_id: eventId });
+  }
+
+  async deleteEventSpeakers(eventId: number): Promise<void> {
+    await this.eventSpeakerRepository.delete({ event_id: eventId });
   }
 }
