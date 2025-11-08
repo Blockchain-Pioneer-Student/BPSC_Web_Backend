@@ -4,7 +4,11 @@ import { RegistrationsService } from './registrations.service';
 import { CreateRegistrationDto } from './dto/create-registration.dto';
 import { Registration } from './entity/registrations.entity';
 import { Public } from '../auth/decorators/public.decorator';
-
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { UseGuards } from '@nestjs/common/decorators/core/use-guards.decorator';
+import { RolesGuard } from '../auth/guards/roles.guard';
+import { Roles } from 'src/auth/decorators/roles.decorator';
+@UseGuards(JwtAuthGuard)
 @Controller('registrations')
 export class RegistrationsController {
   constructor(
@@ -32,7 +36,8 @@ export class RegistrationsController {
     };
   }
 
-  @Public()
+  @UseGuards(RolesGuard)
+  @Roles('admin')
   @Get('get-all')
   async getAllRegistrations(): Promise<{
     success: boolean;

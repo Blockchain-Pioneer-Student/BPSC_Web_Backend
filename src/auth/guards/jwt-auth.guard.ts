@@ -1,3 +1,5 @@
+/* eslint-disable prettier/prettier */
+/* eslint-disable @typescript-eslint/no-unsafe-argument */
 /* eslint-disable @typescript-eslint/no-unsafe-return */
 /* eslint-disable @typescript-eslint/no-unsafe-call */
 /* eslint-disable @typescript-eslint/no-unsafe-member-access */
@@ -34,15 +36,16 @@ export class JwtAuthGuard implements CanActivate {
     }
 
     const request = context.switchToHttp().getRequest();
+    const response = context.switchToHttp().getResponse();
     
-    try {
-      // Extract token from Authorization header
-      const token = this.extractTokenFromHeader(request);
-      if (!token) {
-        throw new UnauthorizedException('Access token is required');
-      }
+    // Extract token from Authorization header
+    const token = this.extractTokenFromHeader(request);
+    if (!token) {
+      throw new UnauthorizedException('Access token is required');
+    }
 
-      // Verify token
+    try {
+      // Try to verify access token
       const payload: JwtPayload = this.tokensService.verifyAccessToken(token);
       
       // Get user info and attach to request
@@ -57,9 +60,80 @@ export class JwtAuthGuard implements CanActivate {
       
       return true;
     } catch (error) {
+      // Check if it's a token expiration error
+      if (
+        error instanceof Error && 
+        error.message.includes('Access token has expired')
+      ) {
+        // Try to refresh token automatically
+        const refreshResult = await this.tryRefreshToken(request, response);
+        if (refreshResult) {
+          return true;
+        }
+      }
+      
+      // If not expired or refresh failed, throw original error
       throw new UnauthorizedException(
-        error instanceof Error ? error.message : 'Invalid or expired token'
+        error instanceof Error ? error.message : 'Invalid or expired token',
       );
+    }
+  }
+
+  private async tryRefreshToken(request: any, response: any): Promise<boolean> {
+    try {
+      // Get user ID from the expired token payload (without verification)
+      const token = this.extractTokenFromHeader(request);
+      if (!token) {
+        throw new UnauthorizedException('Phiên đăng nhập đã hết hạn');
+      }
+
+      // Decode token without verification to get user ID
+      const decodedToken = this.tokensService.decodeTokenWithoutVerification(token);
+      if (!decodedToken || !decodedToken.sub) {
+        throw new UnauthorizedException('Phiên đăng nhập đã hết hạn');
+      }
+
+      const userId = decodedToken.sub;
+      const userAgent = request.headers['user-agent'] || '';
+
+      // Find active refresh token in database for this user and user-agent
+      const refreshTokenEntity = await this.tokensService.findActiveRefreshToken(userId, userAgent);
+      if (!refreshTokenEntity) {
+        throw new UnauthorizedException('Phiên đăng nhập đã hết hạn');
+      }
+
+      // Verify the refresh token from database
+      const payload = await this.tokensService.verifyRefreshToken(refreshTokenEntity.token);
+      
+      // Get user information
+      const user = await this.usersService.findOne(payload.sub);
+      if (!user) {
+        throw new UnauthorizedException('User not found');
+      }
+
+      // Generate new access token
+      const newAccessToken = this.tokensService.generateAccessToken(user);
+      
+      // Update request headers with new token
+      request.headers.authorization = `Bearer ${newAccessToken}`;
+      
+      // Set new token in response header for client to update
+      response.setHeader('X-New-Access-Token', newAccessToken);
+      
+      // Attach user to request
+      request.user = user;
+      request.tokenPayload = this.tokensService.verifyAccessToken(newAccessToken);
+
+      return true;
+    } catch (refreshError) {
+      // If refresh token is also expired or invalid
+      if (
+        refreshError instanceof Error && 
+        refreshError.message.includes('expired')
+      ) {
+        throw new UnauthorizedException('Phiên đăng nhập đã hết hạn');
+      }
+      throw new UnauthorizedException('Phiên đăng nhập đã hết hạn');
     }
   }
 

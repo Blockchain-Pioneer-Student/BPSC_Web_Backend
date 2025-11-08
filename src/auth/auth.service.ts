@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable prettier/prettier */
 import { Injectable, UnauthorizedException, ConflictException } from '@nestjs/common';
 import { UsersService } from '../users/users.service';
@@ -45,9 +46,49 @@ export class AuthService {
         username: user.username,
         email: user.email,
         role: user.role?.name || 'customer',
-        is_verified: user.is_verified,
       },
     };
+  }
+
+  async refreshToken(refreshToken: string, userAgent?: string) {
+    try {
+      // Verify refresh token
+      const payload = await this.tokensService.verifyRefreshToken(refreshToken);
+      
+      // Get user information
+      const user = await this.usersService.findOne(payload.sub);
+      if (!user) {
+        throw new UnauthorizedException('User not found');
+      }
+
+      // Generate new tokens
+      const newAccessToken = this.tokensService.generateAccessToken(user);
+      const newRefreshToken = await this.tokensService.generateRefreshToken(user, userAgent);
+
+      // Revoke the old refresh token
+      await this.tokensService.revokeRefreshToken(refreshToken);
+
+      return {
+        access_token: newAccessToken,
+        refresh_token: newRefreshToken,
+        expires_in: this.tokensService.getAccessTokenExpiresIn(),
+        user: {
+          id: user.id,
+          username: user.username,
+          email: user.email,
+          role: user.role?.name || 'customer',
+          is_verified: user.is_verified,
+        },
+      };
+    } catch (error) {
+      if (error instanceof Error) {
+        if (error.message.includes('expired')) {
+          throw new UnauthorizedException('Phiên đăng nhập đã hết hạn');
+        }
+        throw new UnauthorizedException(error.message);
+      }
+      throw new UnauthorizedException('Invalid refresh token');
+    }
   }
 
   async createRoot(createRootDto: CreateRootDto) {

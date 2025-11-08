@@ -266,6 +266,55 @@ export class TokensService {
   }
 
   /**
+   * Decode JWT token without verification (to get payload from expired token)
+   */
+  decodeTokenWithoutVerification(token: string): any {
+    try {
+      const decoded = this.jwtService.decode(token);
+      return decoded;
+    } catch (error) {
+      console.error('Token decode error:', error);
+      return null;
+    }
+  }
+
+  /**
+   * Find active refresh token for user and user-agent
+   */
+  async findActiveRefreshToken(userId: number, userAgent?: string): Promise<RefreshToken | null> {
+    try {
+      // Build where condition
+      const whereCondition: any = {
+        user_id: userId,
+        is_active: true,
+      };
+      
+      // Handle user_agent properly (null vs undefined vs string)
+      if (userAgent) {
+        whereCondition.user_agent = userAgent;
+      } else {
+        whereCondition.user_agent = IsNull();
+      }
+
+      // Find the most recent active refresh token for this user and user-agent
+      const refreshToken = await this.refreshTokenRepository.findOne({
+        where: whereCondition,
+        order: { id: 'DESC' },
+      });
+
+      // Check if token exists and is not expired
+      if (refreshToken && refreshToken.expires_at > new Date()) {
+        return refreshToken;
+      }
+
+      return null;
+    } catch (error) {
+      console.error('Error finding refresh token:', error);
+      return null;
+    }
+  }
+
+  /**
    * Clean up expired refresh tokens
    */
   async cleanupExpiredTokens(): Promise<void> {

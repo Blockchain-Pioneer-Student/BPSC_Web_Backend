@@ -105,11 +105,11 @@ export class EventsController {
     return await this.eventsService.createEvent(eventWithFile);
   }
 
-  @Patch('update/:id')
+  @Patch('update/:uuid')
   @Roles('admin')
   @UseInterceptors(FileInterceptor('image_file', singleFileOptions))
   async updateEvent(
-    @Param('id') id: string,
+    @Param('uuid') uuid: string,
     @Body() updateEventDto: UpdateEventDto,
     @UploadedFile()
     image_file?: {
@@ -120,16 +120,15 @@ export class EventsController {
     },
   ): Promise<any> {
     try {
-      const eventId = parseInt(id, 10);
       const eventWithFile: UpdateEventDto = {
         ...updateEventDto,
         ...(image_file && { image_file }),
       };
       
-      console.log('Updating event:', eventId, 'with data:', eventWithFile);
+      console.log('Updating event by UUID:', uuid, 'with data:', eventWithFile);
       
-      const result = await this.eventsService.updateEvent(
-        eventId,
+      const result = await this.eventsService.updateEventByUuid(
+        uuid,
         eventWithFile,
       );
       return {
@@ -144,22 +143,20 @@ export class EventsController {
   }
 
   
-  @Delete(':id')
+  @Delete('uuid/:uuid')
   @Roles('admin')
-  async deleteEvent(@Param('id') id: string): Promise<any> {
+  async deleteEventByUuid(@Param('uuid') uuid: string): Promise<any> {
     try {
-      const eventId = parseInt(id, 10);
+      console.log('Deleting event by UUID:', uuid);
       
-      console.log('Deleting event:', eventId);
-      
-      const result = await this.eventsService.deleteEvent(eventId);
+      const result = await this.eventsService.deleteEventByUuid(uuid);
       return {
         success: true,
         message: 'Event deleted successfully',
         data: result,
       };
     } catch (error) {
-      console.error('Error in deleteEvent controller:', error);
+      console.error('Error in deleteEventByUuid controller:', error);
       throw error;
     }
   }

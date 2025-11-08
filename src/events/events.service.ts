@@ -114,37 +114,33 @@ export class EventsService {
     }
   }
 
-  async updateEvent(id: number, updateEventDto: UpdateEventDto): Promise<any> {
+  async updateEventByUuid(uuid: string, updateEventDto: UpdateEventDto): Promise<any> {
     try {
-      // Check if event exists
-      const existingEvent = await this.eventsRepository.findEventById(id);
+      // First find the event by UUID to get the ID
+      const existingEvent = await this.eventsRepository.findEventByUuid(uuid);
       if (!existingEvent) {
-        throw new NotFoundException(`Event with ID ${id} not found`);
+        throw new NotFoundException(`Event with UUID ${uuid} not found`);
       }
 
-      let imageUrl: string | undefined = existingEvent.image;
-
-      // If a new image file is provided, upload it and get the URL
+      // Handle image upload if provided
       if (updateEventDto.image_file) {
-        const uploadResult = await this.uploadService.uploadSingleFile(
+        const uploadedImage = await this.uploadService.uploadSingleFile(
           updateEventDto.image_file.path,
           updateEventDto.image_file.originalname,
           updateEventDto.image_file.size,
           updateEventDto.image_file.mimetype,
         );
-        console.log(uploadResult);
-        imageUrl = uploadResult.url;
+        (updateEventDto as any).image = uploadedImage.url;
       }
 
       const updatedEvent = {
         ...updateEventDto,
-        image: imageUrl, // Use the existing or new uploaded image URL
+        image_file: undefined, // Remove file from update data
       };
 
-      // Update the event in the repository
-      return await this.eventsRepository.updateEvent(id, updatedEvent);
+      return await this.eventsRepository.updateEvent(existingEvent.id, updatedEvent);
     } catch (error) {
-      console.error('Error updating event:', error);
+      console.error('Error updating event by UUID:', error);
       if (error instanceof NotFoundException) {
         throw error;
       }
@@ -152,33 +148,34 @@ export class EventsService {
     }
   }
 
-  async deleteEvent(id: number): Promise<any> {
+  async deleteEventByUuid(uuid: string): Promise<any> {
     try {
-      // Check if event exists
-      const existingEvent = await this.eventsRepository.findEventById(id);
+      // First find the event by UUID to get the ID
+      const existingEvent = await this.eventsRepository.findEventByUuid(uuid);
       if (!existingEvent) {
-        throw new NotFoundException(`Event with ID ${id} not found`);
+        throw new NotFoundException(`Event with UUID ${uuid} not found`);
       }
 
       // Delete related schedules and speakers first
       await Promise.all([
-        this.eventsRepository.deleteEventSchedules(id),
-        this.eventsRepository.deleteEventSpeakers(id),
+        this.eventsRepository.deleteEventSchedules(existingEvent.id),
+        this.eventsRepository.deleteEventSpeakers(existingEvent.id),
       ]);
 
       // Delete the event
-      const deleteResult = await this.eventsRepository.deleteEvent(id);
+      const deleteResult = await this.eventsRepository.deleteEvent(existingEvent.id);
       
       if (!deleteResult) {
         throw new Error('Failed to delete event from database');
       }
       
       return {
-        id: id,
+        uuid: uuid,
+        id: existingEvent.id,
         message: 'Event and related data deleted successfully',
       };
     } catch (error) {
-      console.error('Error deleting event:', error);
+      console.error('Error deleting event by UUID:', error);
       if (error instanceof NotFoundException) {
         throw error;
       }

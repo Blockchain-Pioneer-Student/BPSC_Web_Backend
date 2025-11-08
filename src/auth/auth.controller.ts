@@ -6,7 +6,7 @@ import {
   Req, 
   HttpCode, 
   HttpStatus,
-  Get 
+  Get
 } from '@nestjs/common';
 import type { Request } from 'express';
 import { AuthService } from './auth.service';
@@ -30,6 +30,7 @@ export class AuthController {
     const userAgent = req.headers['user-agent'] || '';
     return await this.authService.login(loginDto, userAgent);
   }
+
 
   @Post('create-root')
   @Public()

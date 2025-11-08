@@ -1,5 +1,8 @@
-import { Injectable } from '@nestjs/common';
+/* eslint-disable prettier/prettier */
+/* eslint-disable @typescript-eslint/no-unused-vars */
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { Member } from './entity/members.entity';
+import { MemberRole } from './entity/member_roles.entity';
 import { MembersRepository } from './members.repository';
 
 @Injectable()
