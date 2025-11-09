@@ -15,6 +15,7 @@ import { MembersModule } from './members/members.module';
 import { ContactsModule } from './contacts/contacts.module';
 import { RegistrationsModule } from './registrations/registrations.module';
 import { BlockchainAreasModule } from './blockchain_areas/blockchain_areas.module';
+import { UploadModule } from './upload/upload.module';
 @Module({
   imports: [
     // Config module để đọc .env
@@ -56,6 +57,7 @@ import { BlockchainAreasModule } from './blockchain_areas/blockchain_areas.modul
     ContactsModule,
     RegistrationsModule,
     BlockchainAreasModule,
+    UploadModule,
   ],
   controllers: [AppController],
   providers: [

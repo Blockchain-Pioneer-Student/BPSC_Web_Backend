@@ -125,7 +125,7 @@ export class EventsController {
         ...(image_file && { image_file }),
       };
       
-      console.log('Updating event by UUID:', uuid, 'with data:', eventWithFile);
+      // console.log('Updating event by UUID:', uuid, 'with data:', eventWithFile);
       
       const result = await this.eventsService.updateEventByUuid(
         uuid,

@@ -1,0 +1,22 @@
+/* eslint-disable @typescript-eslint/no-unsafe-assignment */
+/* eslint-disable prettier/prettier */
+import { Module } from '@nestjs/common';
+import { MulterModule } from '@nestjs/platform-express';
+import { UploadController } from './upload.controller';
+import { UploadService } from './upload.service';
+import { CloudinaryConfig } from '../config/cloudinary.config';
+import { storage, imageFileFilter, limits } from '../middleware/multer.middleware';
+
+@Module({
+  imports: [
+    MulterModule.register({
+      storage,
+      fileFilter: imageFileFilter,
+      limits,
+    }),
+  ],
+  controllers: [UploadController],
+  providers: [UploadService, CloudinaryConfig],
+  exports: [UploadService],
+})
+export class UploadModule {}
