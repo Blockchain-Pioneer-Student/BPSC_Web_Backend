@@ -21,6 +21,11 @@ export class UploadService {
   ): Promise<any> {
     try {
       this.validateUploadedFile({ path: filePath, filename: originalName });
+      
+      // Lấy thông tin file gốc trước khi upload
+      const fileStats = fs.statSync(filePath);
+      const originalFileSize = fileStats.size;
+      
       const result = await this.safeUpload(filePath);
       if (!result || !result.secure_url) {
         throw new Error('Failed to retrieve secure URL from Cloudinary response');
@@ -33,7 +38,7 @@ export class UploadService {
         height: result.height,
         file_info: {
           original_name: originalName,
-          size: size,
+          size: originalFileSize, // Sử dụng kích thước file gốc
           mime_type: mimeType,
         },
       };
@@ -51,6 +56,10 @@ export class UploadService {
         this.validateUploadedFile({ path: file.path, filename: file.originalName });
       }
       const uploadPromises = files.map(async (file) => {
+        // Lấy thông tin file gốc trước khi upload
+        const fileStats = fs.statSync(file.path);
+        const originalFileSize = fileStats.size;
+        
         const result = await this.safeUpload(file.path);
         if (!result || !result.secure_url) {
           throw new Error('Failed to retrieve secure URL from Cloudinary response');
@@ -63,7 +72,7 @@ export class UploadService {
           height: result.height,
           file_info: {
             original_name: file.originalName,
-            size: file.size,
+            size: originalFileSize, // Sử dụng kích thước file gốc
             mime_type: file.mimeType,
           },
         };
@@ -88,16 +97,12 @@ export class UploadService {
 
   private async safeUpload(filePath: string): Promise<any> {
     return new Promise((resolve, reject) => {
-      cloudinary.uploader.upload(
+      void cloudinary.uploader.upload(
         filePath,
         {
           folder: 'bpsclub/events',
           resource_type: 'image',
-          transformation: [
-            { width: 800, height: 800, crop: 'limit' },
-            { quality: 'auto' },
-            { format: 'webp' },
-          ],
+          
         },
         (error: any, result: any) => {
           if (error) {
