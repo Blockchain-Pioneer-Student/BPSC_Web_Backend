@@ -1,7 +1,6 @@
 /* eslint-disable @typescript-eslint/no-unsafe-argument */
 /* eslint-disable @typescript-eslint/no-unsafe-member-access */
 /* eslint-disable @typescript-eslint/no-unsafe-call */
-/* eslint-disable @typescript-eslint/no-unsafe-return */
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
 /* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable prettier/prettier */
@@ -13,7 +12,8 @@ import { Event } from './entity/events.entity';
 import { EventCategory } from './entity/event_categories.entity';
 import { EventSchedule } from './entity/event_schedules.entity';
 import { EventSpeaker } from './entity/event_speakers.entity';
-import { CreateEventDto, UpdateEventDto } from './interface/create-event.interface' // Import the CreateEventData DTO
+import { CreateEventDto } from './dto/create-event.dto';
+import { UpdateEventDto } from './dto/update-event.dto';
 
 // Extend the Event type to include optional speakers and schedules
 @Injectable()
@@ -193,14 +193,41 @@ export class EventsRepository {
     const schedules = typeof dto.schedules === 'string' ? JSON.parse(dto.schedules) : (dto.schedules ?? []);
     const speakers = typeof dto.speakers === 'string' ? JSON.parse(dto.speakers) : (dto.speakers ?? []);
 
+    // Create event data without relations
+    const { schedules: _, speakers: __, image_file: ___, ...eventData } = dto;
+    
     const event = this.eventRepository.create({
-      ...dto,
+      ...eventData,
       event_uuid: randomUUID(),
-      schedules,
-      speakers,
     });
 
-    return await this.eventRepository.save(event);
+    const savedEvent = await this.eventRepository.save(event);
+
+    // Handle schedules creation
+    if (schedules.length > 0) {
+      const scheduleEntities = schedules.map(schedule => 
+        this.eventScheduleRepository.create({
+          ...schedule,
+          event: savedEvent,
+          event_id: savedEvent.id,
+        })
+      );
+      await this.eventScheduleRepository.save(scheduleEntities);
+    }
+
+    // Handle speakers creation
+    if (speakers.length > 0) {
+      const speakerEntities = speakers.map(speaker => 
+        this.eventSpeakerRepository.create({
+          ...speaker,
+          event: savedEvent,
+          event_id: savedEvent.id,
+        })
+      );
+      await this.eventSpeakerRepository.save(speakerEntities);
+    }
+
+    return savedEvent;
   }
 
   async updateEvent(id: number, dto: UpdateEventDto): Promise<Event | null> {
@@ -216,14 +243,15 @@ export class EventsRepository {
       // Handle schedules update
       if (schedules !== undefined) {
         // First, delete existing schedules for this event
-        await this.eventScheduleRepository.delete({ event: { id } });
+        await this.eventScheduleRepository.delete({ event_id: id });
         
         // Then create new schedules if any
-        if (schedules.length > 0) {
+        if (schedules && schedules.length > 0) {
           const parsedSchedules = typeof schedules === 'string' ? JSON.parse(schedules) : schedules;
           const scheduleEntities = parsedSchedules.map(schedule => 
             this.eventScheduleRepository.create({
               ...schedule,
+              event_id: id,
               event: { id } as Event,
             })
           );
@@ -234,14 +262,15 @@ export class EventsRepository {
       // Handle speakers update
       if (speakers !== undefined) {
         // First, delete existing speakers for this event
-        await this.eventSpeakerRepository.delete({ event: { id } });
+        await this.eventSpeakerRepository.delete({ event_id: id });
         
         // Then create new speakers if any
-        if (speakers.length > 0) {
+        if (speakers && speakers.length > 0) {
           const parsedSpeakers = typeof speakers === 'string' ? JSON.parse(speakers) : speakers;
           const speakerEntities = parsedSpeakers.map(speaker => 
             this.eventSpeakerRepository.create({
               ...speaker,
+              event_id: id,
               event: { id } as Event,
             })
           );

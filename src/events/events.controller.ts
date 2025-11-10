@@ -17,7 +17,10 @@ import {
 import { EventsService } from './events.service';
 import { Event } from './entity/events.entity';
 import { EventCategory } from './entity/event_categories.entity';
-import type { CreateEventDto, UpdateEventDto } from './interface/create-event.interface';
+import {
+  parseEventFormData,
+  parseEventUpdateFormData,
+} from './dto/event-form-data.helper';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { singleFileOptions } from 'src/middleware/multer.middleware';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
@@ -108,18 +111,17 @@ export class EventsController {
   @Roles('admin')
   @UseInterceptors(FileInterceptor('image_file', singleFileOptions))
   async createEvent(
-    @Body() createEventDto: CreateEventDto,
+    @Body() body: any,
     @UploadedFile()
-    image_file: {
+    image_file?: {
       path: string;
       originalname: string;
       size: number;
       mimetype: string;
     },
   ): Promise<any> {
-    const eventWithFile = { ...createEventDto, image_file };
-    // console.log(eventWithFile);
-    return await this.eventsService.createEvent(eventWithFile);
+    const createEventDto = parseEventFormData(body, image_file);
+    return await this.eventsService.createEvent(createEventDto);
   }
 
   @Patch('update/:uuid')
@@ -127,7 +129,7 @@ export class EventsController {
   @UseInterceptors(FileInterceptor('image_file', singleFileOptions))
   async updateEvent(
     @Param('uuid') uuid: string,
-    @Body() updateEventDto: UpdateEventDto,
+    @Body() body: any,
     @UploadedFile()
     image_file?: {
       path: string;
@@ -137,16 +139,13 @@ export class EventsController {
     },
   ): Promise<any> {
     try {
-      const eventWithFile: UpdateEventDto = {
-        ...updateEventDto,
-        ...(image_file && { image_file }),
-      };
+      const updateEventDto = parseEventUpdateFormData(body, image_file);
       
-      // console.log('Updating event by UUID:', uuid, 'with data:', eventWithFile);
+      console.log('Updating event by UUID:', uuid, 'with data:', updateEventDto);
       
       const result = await this.eventsService.updateEventByUuid(
         uuid,
-        eventWithFile,
+        updateEventDto,
       );
       return {
         success: true,

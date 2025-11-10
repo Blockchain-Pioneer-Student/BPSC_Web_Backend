@@ -100,9 +100,8 @@ export class UploadService {
       void cloudinary.uploader.upload(
         filePath,
         {
-          folder: 'bpsclub/events',
+          folder: 'bpsclub',
           resource_type: 'image',
-          
         },
         (error: any, result: any) => {
           if (error) {

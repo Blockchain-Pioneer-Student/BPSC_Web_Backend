@@ -18,6 +18,10 @@ export class AuthService {
     return await this.usersService.findOne(userId);
   }
 
+  decodeToken(token: string) {
+    return this.tokensService.decodeTokenWithoutVerification(token);
+  }
+
   async login(loginDto: LoginDto, userAgent?: string) {
     const { identifier, password } = loginDto;
 
