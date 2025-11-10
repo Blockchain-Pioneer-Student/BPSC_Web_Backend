@@ -1,5 +1,5 @@
 /* eslint-disable prettier/prettier */
-import { Controller, Post, Get, Body, UsePipes, ValidationPipe } from '@nestjs/common';
+import { Controller, Post, Get, Delete, Body, Param, UsePipes, ValidationPipe, ParseIntPipe } from '@nestjs/common';
 import { RegistrationsService } from './registrations.service';
 import { CreateRegistrationDto } from './dto/create-registration.dto';
 import { Registration } from './entity/registrations.entity';
@@ -52,6 +52,21 @@ export class RegistrationsController {
       message: 'Registrations retrieved successfully',
       data: registrations,
       count: registrations.length,
+    };
+  }
+
+  @UseGuards(RolesGuard)
+  @Roles('admin')
+  @Delete(':id')
+  async deleteRegistration(@Param('id', ParseIntPipe) id: number): Promise<{
+    success: boolean;
+    message: string;
+  }> {
+    await this.registrationsService.deleteRegistration(id);
+
+    return {
+      success: true,
+      message: 'Registration deleted successfully',
     };
   }
 }

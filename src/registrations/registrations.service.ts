@@ -67,4 +67,18 @@ export class RegistrationsService {
       },
     });
   }
+
+  async deleteRegistration(id: number): Promise<void> {
+    // First, delete related blockchain area associations
+    await this.registrationBlockchainAreaRepository.delete({
+      registration_id: id,
+    });
+
+    // Then delete the registration
+    const result = await this.registrationRepository.delete(id);
+    
+    if (result.affected === 0) {
+      throw new BadRequestException('Registration not found');
+    }
+  }
 }

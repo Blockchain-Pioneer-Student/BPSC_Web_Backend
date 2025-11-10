@@ -23,6 +23,15 @@ export class EventsService {
     return await this.eventsRepository.findAllEvents(sort, limit, category, search);
   }
 
+  async getAllActiveEvents(
+    sort?: string,
+    limit?: number,
+    category?: string,
+    search?: string,
+  ): Promise<any[]> {
+    return await this.eventsRepository.findAllActiveEvents(sort, limit, category, search);
+  }
+
   async getEventByUuid(event_uuid: string): Promise<any> {
     // Find the event with category relation
     const event = await this.eventsRepository.findEventByUuid(event_uuid);

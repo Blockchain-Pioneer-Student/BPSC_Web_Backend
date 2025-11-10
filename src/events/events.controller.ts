@@ -30,8 +30,8 @@ import { Public } from '../auth/decorators/public.decorator';
 export class EventsController {
   constructor(private readonly eventsService: EventsService) {}
 
-  @Public()
   @Get('get-all')
+  @Roles('admin')
   async getAllEvents(
     @Query('sort') sort?: string,
     @Query('limit') limit?: string,
@@ -40,6 +40,23 @@ export class EventsController {
   ): Promise<Event[]> {
     const limitNum = limit ? parseInt(limit, 10) : undefined;
     return await this.eventsService.getAllEvents(
+      sort,
+      limitNum,
+      category,
+      search,
+    );
+  }
+
+  @Public()
+  @Get('get-all-active')
+  async getAllActiveEvents(
+    @Query('sort') sort?: string,
+    @Query('limit') limit?: string,
+    @Query('category') category?: string,
+    @Query('search') search?: string,
+  ): Promise<Event[]> {
+    const limitNum = limit ? parseInt(limit, 10) : undefined;
+    return await this.eventsService.getAllActiveEvents(
       sort,
       limitNum,
       category,

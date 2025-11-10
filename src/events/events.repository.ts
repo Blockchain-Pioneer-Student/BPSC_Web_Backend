@@ -86,6 +86,64 @@ export class EventsRepository {
     return await queryBuilder.getMany();
   }
 
+  async findAllActiveEvents(
+    sort?: string,
+    limit?: number,
+    category?: string,
+    search?: string,
+  ): Promise<Event[]> {
+    const queryBuilder = this.eventRepository
+      .createQueryBuilder('event')
+      .leftJoinAndSelect('event.category', 'category')
+      .where('event.is_visible = :isVisible', { isVisible: true });
+
+    // Handle category filter - using the new relationship
+    if (category && category.trim() !== '') {
+      queryBuilder.andWhere('category.name = :category', { category });
+    }
+
+    // Handle search filter
+    if (search && search.trim() !== '') {
+      queryBuilder.andWhere(
+        '(LOWER(event.title) LIKE LOWER(:search) OR LOWER(event.excerpt) LIKE LOWER(:search) OR LOWER(event.location) LIKE LOWER(:search))',
+        { search: `%${search}%` },
+      );
+    }
+
+    // Handle sorting
+    if (sort) {
+      const [field, order] = sort.split('_');
+      const orderDirection = order?.toUpperCase() === 'DESC' ? 'DESC' : 'ASC';
+
+      // Validate field exists in entity
+      const allowedFields = [
+        'views',
+        'likes',
+        'comments',
+        'created_at',
+        'updated_at',
+        'date',
+        'title',
+      ];
+      if (allowedFields.includes(field)) {
+        queryBuilder.orderBy(`event.${field}`, orderDirection);
+      } else {
+        // Default sort by created_at DESC if invalid field
+        queryBuilder.orderBy('event.created_at', 'DESC');
+      }
+    } else {
+      // Default sort by created_at DESC
+      queryBuilder.orderBy('event.created_at', 'DESC');
+    }
+
+    // Handle limit
+    if (limit && limit > 0) {
+      queryBuilder.limit(limit);
+    }
+
+    return await queryBuilder.getMany();
+  }
+
   async findEventById(id: number): Promise<Event | null> {
     return await this.eventRepository.findOne({
       where: { id },
