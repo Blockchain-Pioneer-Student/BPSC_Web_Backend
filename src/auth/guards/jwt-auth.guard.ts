@@ -38,8 +38,8 @@ export class JwtAuthGuard implements CanActivate {
     const request = context.switchToHttp().getRequest();
     const response = context.switchToHttp().getResponse();
     
-    // Extract token from Authorization header
-    const token = this.extractTokenFromHeader(request);
+    // Extract token from HTTP-only cookie first, then fallback to Authorization header
+    const token = this.extractTokenFromCookie(request) || this.extractTokenFromHeader(request);
     if (!token) {
       throw new UnauthorizedException('Access token is required');
     }
@@ -81,29 +81,53 @@ export class JwtAuthGuard implements CanActivate {
 
   private async tryRefreshToken(request: any, response: any): Promise<boolean> {
     try {
-      // Get user ID from the expired token payload (without verification)
-      const token = this.extractTokenFromHeader(request);
-      if (!token) {
-        throw new UnauthorizedException('Phiên đăng nhập đã hết hạn');
+      // Get refresh token from cookie first, then try to get user ID from expired access token
+      let refreshToken = request.cookies?.refresh_token;
+      let userId: number | null = null;
+
+      if (refreshToken) {
+        // If we have refresh token from cookie, verify it to get user ID
+        try {
+          const refreshPayload = await this.tokensService.verifyRefreshToken(refreshToken);
+          userId = refreshPayload.sub;
+        } catch {
+          // Refresh token is invalid/expired
+          refreshToken = null;
+        }
       }
 
-      // Decode token without verification to get user ID
-      const decodedToken = this.tokensService.decodeTokenWithoutVerification(token);
-      if (!decodedToken || !decodedToken.sub) {
-        throw new UnauthorizedException('Phiên đăng nhập đã hết hạn');
+      if (!refreshToken || !userId) {
+        // Try fallback method: get user ID from expired access token
+        const accessToken = this.extractTokenFromCookie(request) || this.extractTokenFromHeader(request);
+        if (!accessToken) {
+          throw new UnauthorizedException('Phiên đăng nhập đã hết hạn');
+        }
+
+        // Decode token without verification to get user ID
+        const decodedToken = this.tokensService.decodeTokenWithoutVerification(accessToken);
+        if (!decodedToken || !decodedToken.sub) {
+          throw new UnauthorizedException('Phiên đăng nhập đã hết hạn');
+        }
+
+        userId = decodedToken.sub;
+        
+        if (!userId) {
+          throw new UnauthorizedException('Phiên đăng nhập đã hết hạn');
+        }
+        
+        const userAgent = request.headers['user-agent'] || '';
+
+        // Find active refresh token in database for this user and user-agent
+        const refreshTokenEntity = await this.tokensService.findActiveRefreshToken(userId, userAgent);
+        if (!refreshTokenEntity) {
+          throw new UnauthorizedException('Phiên đăng nhập đã hết hạn');
+        }
+
+        refreshToken = refreshTokenEntity.token;
       }
 
-      const userId = decodedToken.sub;
-      const userAgent = request.headers['user-agent'] || '';
-
-      // Find active refresh token in database for this user and user-agent
-      const refreshTokenEntity = await this.tokensService.findActiveRefreshToken(userId, userAgent);
-      if (!refreshTokenEntity) {
-        throw new UnauthorizedException('Phiên đăng nhập đã hết hạn');
-      }
-
-      // Verify the refresh token from database
-      const payload = await this.tokensService.verifyRefreshToken(refreshTokenEntity.token);
+      // Verify the refresh token
+      const payload = await this.tokensService.verifyRefreshToken(refreshToken);
       
       // Get user information
       const user = await this.usersService.findOne(payload.sub);
@@ -114,10 +138,18 @@ export class JwtAuthGuard implements CanActivate {
       // Generate new access token
       const newAccessToken = this.tokensService.generateAccessToken(user);
       
-      // Update request headers with new token
+      // Update request headers with new token for backward compatibility
       request.headers.authorization = `Bearer ${newAccessToken}`;
       
-      // Set new token in response header for client to update
+      // Set new access token in HTTP-only cookie
+      response.cookie('access_token', newAccessToken, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+        maxAge: 15 * 60 * 1000, // 15 minutes
+      });
+      
+      // Set new token in response header for client to update (backward compatibility)
       response.setHeader('X-New-Access-Token', newAccessToken);
       
       // Attach user to request
@@ -126,7 +158,10 @@ export class JwtAuthGuard implements CanActivate {
 
       return true;
     } catch (refreshError) {
-      // If refresh token is also expired or invalid
+      // If refresh token is also expired or invalid, clear cookies
+      response.clearCookie('access_token');
+      response.clearCookie('refresh_token');
+      
       if (
         refreshError instanceof Error && 
         refreshError.message.includes('expired')
@@ -135,6 +170,10 @@ export class JwtAuthGuard implements CanActivate {
       }
       throw new UnauthorizedException('Phiên đăng nhập đã hết hạn');
     }
+  }
+
+  private extractTokenFromCookie(request: any): string | null {
+    return request.cookies?.access_token || null;
   }
 
   private extractTokenFromHeader(request: any): string | null {

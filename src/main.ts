@@ -4,11 +4,15 @@ import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { ValidationPipe } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import cookieParser from 'cookie-parser';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
   const configService = app.get(ConfigService);
+
+  // Enable cookie parser for HTTP-only cookies
+  app.use(cookieParser());
 
   // Enable CORS for frontend with environment-based origins
   const allowedOrigins = configService

@@ -14,6 +14,10 @@ export class AuthService {
     private readonly tokensService: TokensService,
   ) {}
 
+  async getUserById(userId: number) {
+    return await this.usersService.findOne(userId);
+  }
+
   async login(loginDto: LoginDto, userAgent?: string) {
     const { identifier, password } = loginDto;
 
@@ -45,6 +49,8 @@ export class AuthService {
         id: user.id,
         username: user.username,
         email: user.email,
+        avatar_url: user.avatar_url || '',
+        is_verified: user.is_verified,
         role: user.role?.name || 'customer',
       },
     };

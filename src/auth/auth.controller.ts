@@ -4,11 +4,12 @@ import {
   Post, 
   Body, 
   Req, 
+  Res,
   HttpCode, 
   HttpStatus,
   Get
 } from '@nestjs/common';
-import type { Request } from 'express';
+import type { Request, Response } from 'express';
 import { AuthService } from './auth.service';
 import { LoginDto } from './dto/login.dto';
 import { CreateRootDto } from './dto/create-root.dto';
@@ -26,9 +27,30 @@ export class AuthController {
   @Post('login')
   @Public()
   @HttpCode(HttpStatus.OK)
-  async login(@Body() loginDto: LoginDto, @Req() req: Request) {
+  async login(@Body() loginDto: LoginDto, @Req() req: Request, @Res({ passthrough: true }) res: Response) {
     const userAgent = req.headers['user-agent'] || '';
-    return await this.authService.login(loginDto, userAgent);
+    const result = await this.authService.login(loginDto, userAgent);
+    
+    // Automatically set HTTP-only cookies for tokens
+    res.cookie('access_token', result.access_token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 15 * 60 * 1000, // 15 minutes
+    });
+
+    res.cookie('refresh_token', result.refresh_token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+    });
+
+    // Return user info without tokens (tokens are now in HTTP-only cookies)
+    return {
+      user: result.user,
+      expires_in: result.expires_in,
+    };
   }
 
 
@@ -47,17 +69,23 @@ export class AuthController {
   }
 
   @Get('verify')
-  verifyToken(@Req() req: Request & { user: JwtPayload }) {
+  async verifyToken(@Req() req: Request & { user: JwtPayload }) {
     // Token đã được verify bởi JWT Guard
-    // Trả về thông tin user từ request
-    const user = req.user;
+    // Lấy thông tin user đầy đủ từ database
+    const userFromDb = await this.authService.getUserById(req.user.sub);
+    
+    if (!userFromDb) {
+      return { user: null };
+    }
+
     return {
       user: {
-        id: user.sub,
-        username: user.username,
-        email: user.email,
-        role: user.role,
-        is_verified: user.is_verified,
+        id: userFromDb.id,
+        username: userFromDb.username,
+        email: userFromDb.email,
+        avatar_url: userFromDb.avatar_url || '',
+        is_verified: userFromDb.is_verified,
+        role: userFromDb.role?.name || 'customer',
       },
     };
   }
@@ -66,5 +94,47 @@ export class AuthController {
   @Public()
   health() {
     return { status: 'ok', timestamp: new Date().toISOString() };
+  }
+
+  @Post('set-cookie')
+  @Public()
+  @HttpCode(HttpStatus.OK)
+  setCookie(@Body() body: { access_token: string; refresh_token?: string }, @Res({ passthrough: true }) res: Response) {
+    const { access_token, refresh_token } = body;
+    
+    if (!access_token) {
+      return { success: false, message: 'Access token is required' };
+    }
+
+    // Set HTTP-only cookie for access token
+    res.cookie('access_token', access_token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 15 * 60 * 1000, // 15 minutes
+    });
+
+    // Set HTTP-only cookie for refresh token if provided
+    if (refresh_token) {
+      res.cookie('refresh_token', refresh_token, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+        maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+      });
+    }
+
+    return { success: true, message: 'Cookies set successfully' };
+  }
+
+  @Post('clear-cookie')
+  @Public()
+  @HttpCode(HttpStatus.OK)
+  clearCookie(@Res({ passthrough: true }) res: Response) {
+    // Clear both access and refresh token cookies
+    res.clearCookie('access_token');
+    res.clearCookie('refresh_token');
+    
+    return { success: true, message: 'Cookies cleared successfully' };
   }
 }

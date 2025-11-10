@@ -50,6 +50,9 @@ export class Event {
   @Column({ type: 'varchar', length: 50, nullable: true })
   status?: string;
 
+  @Column({ type: 'boolean', nullable: false, default: true })
+  is_visible: boolean;
+
   @Column({ type: 'text', nullable: true })
   registration_link?: string;
 
