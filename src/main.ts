@@ -20,8 +20,8 @@ async function bootstrap() {
     ?.split(',') || [
     'http://localhost:3000',
     'http://localhost:3001',
-    'https://shop-nest-premium.onrender.com',
-    'https://shop-nest-premium.vercel.app',
+    'https://bpsclub-admin-dashboard.vercel.app',
+    'https://web-clb-blockchain-utc.vercel.app',
   ];
 
   app.enableCors({

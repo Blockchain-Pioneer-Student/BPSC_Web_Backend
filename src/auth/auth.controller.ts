@@ -31,18 +31,26 @@ export class AuthController {
     const userAgent = req.headers['user-agent'] || '';
     const result = await this.authService.login(loginDto, userAgent);
   
-    // Automatically set HTTP-only cookies for tokens
-    res.cookie('access_token', result.access_token, {
+    // Clear existing cookies first
+    res.clearCookie('access_token');
+    res.clearCookie('refresh_token');
+  
+    // Cross-origin cookies configuration
+    const cookieConfig = {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',  
+      secure: true, // Always true for production HTTPS
+      sameSite: 'none' as const, // Required for cross-origin
+      path: '/',
+    };
+  
+    // Set HTTP-only cookies for tokens
+    res.cookie('access_token', result.access_token, {
+      ...cookieConfig,
       maxAge: 15 * 60 * 1000, // 15 minutes for testing
     });
 
     res.cookie('refresh_token', result.refresh_token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
+      ...cookieConfig,
       maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
     });
 
@@ -116,20 +124,24 @@ export class AuthController {
         throw new Error('Phiên đăng nhập đã hết hạn');
       }
       
+      // Cross-origin cookie config
+      const cookieConfig = {
+        httpOnly: true,
+        secure: true,
+        sameSite: 'none' as const,
+        path: '/',
+      };
+      
       // Set new access token cookie
       res.cookie('access_token', result.access_token, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'lax',
+        ...cookieConfig,
         maxAge: 15 * 60 * 1000, // 15 minutes for testing
       });
 
       // Optionally set new refresh token if provided
       if (result.refresh_token) {
         res.cookie('refresh_token', result.refresh_token, {
-          httpOnly: true,
-          secure: process.env.NODE_ENV === 'production',
-          sameSite: 'lax',
+          ...cookieConfig,
           maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
         });
       }
@@ -164,20 +176,24 @@ export class AuthController {
       return { success: false, message: 'Access token is required' };
     }
 
+    // Cross-origin cookie config
+    const cookieConfig = {
+      httpOnly: true,
+      secure: true,
+      sameSite: 'none' as const,
+      path: '/',
+    };
+
     // Set HTTP-only cookie for access token
     res.cookie('access_token', access_token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
+      ...cookieConfig,
       maxAge: 15 * 60 * 1000, // 15 minutes for testing
     });
 
-    // Set` HTTP-only cookie for refresh token if provided
+    // Set HTTP-only cookie for refresh token if provided
     if (refresh_token) {
       res.cookie('refresh_token', refresh_token, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'lax',
+        ...cookieConfig,
         maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
       });
     }
