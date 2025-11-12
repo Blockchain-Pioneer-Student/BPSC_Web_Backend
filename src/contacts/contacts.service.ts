@@ -4,6 +4,14 @@ import { Repository } from 'typeorm';
 import { Contact } from './entity/contacts.entity';
 import { CreateContactDto } from './dto/create-contact.dto';
 
+export interface PaginatedContacts {
+  contacts: Contact[];
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+}
+
 @Injectable()
 export class ContactsService {
   constructor(
@@ -20,6 +28,27 @@ export class ContactsService {
     return await this.contactRepository.find({
       order: { created_at: 'DESC' },
     });
+  }
+
+  async findAllPaginated(
+    page: number = 1,
+    limit: number = 10,
+  ): Promise<PaginatedContacts> {
+    const offset = (page - 1) * limit;
+    
+    const [contacts, total] = await this.contactRepository.findAndCount({
+      order: { created_at: 'DESC' },
+      skip: offset,
+      take: limit,
+    });
+
+    return {
+      contacts,
+      total,
+      page,
+      limit,
+      totalPages: Math.ceil(total / limit),
+    };
   }
 
   async findById(id: number): Promise<Contact | null> {

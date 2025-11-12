@@ -7,6 +7,7 @@ import {
   Delete,
   UseGuards,
   ValidationPipe,
+  Query,
 } from '@nestjs/common';
 import { ContactsService } from './contacts.service';
 import { CreateContactDto } from './dto/create-contact.dto';
@@ -41,8 +42,20 @@ export class ContactsController {
 
   @Roles('admin')
   @Get()
-  async findAll(): Promise<Contact[]> {
-    return await this.contactsService.findAll();
+  async findAll(
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
+  ): Promise<any> {
+    // If pagination parameters are provided, use paginated method
+    if (page || limit) {
+      const pageNum = parseInt(page || '1', 10);
+      const limitNum = parseInt(limit || '10', 10);
+      return await this.contactsService.findAllPaginated(pageNum, limitNum);
+    }
+    
+    // Otherwise, return all contacts (for backward compatibility)
+    const contacts = await this.contactsService.findAll();
+    return { contacts };
   }
 
   @Roles('admin')

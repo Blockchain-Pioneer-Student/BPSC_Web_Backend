@@ -30,12 +30,12 @@ export class AuthController {
   async login(@Body() loginDto: LoginDto, @Req() req: Request, @Res({ passthrough: true }) res: Response) {
     const userAgent = req.headers['user-agent'] || '';
     const result = await this.authService.login(loginDto, userAgent);
-    
+  
     // Automatically set HTTP-only cookies for tokens
     res.cookie('access_token', result.access_token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
+      sameSite: 'lax',  
       maxAge: 15 * 60 * 1000, // 15 minutes for testing
     });
 
