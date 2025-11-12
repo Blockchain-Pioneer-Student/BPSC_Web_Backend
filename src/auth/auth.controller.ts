@@ -36,7 +36,7 @@ export class AuthController {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
-      maxAge: 1 * 60 * 1000, // 1 minute for testing
+      maxAge: 15 * 60 * 1000, // 15 minutes for testing
     });
 
     res.cookie('refresh_token', result.refresh_token, {
@@ -91,46 +91,6 @@ export class AuthController {
     };
   }
 
-  @Get('token-status')
-  @Public()
-  getTokenStatus(@Req() req: Request) {
-    const accessToken = req.cookies['access_token'] as string;
-    
-    if (!accessToken) {
-      return { 
-        hasToken: false, 
-        isValid: false, 
-        timeUntilExpiry: 0,
-        shouldRefresh: true 
-      };
-    }
-
-    try {
-      // Decode token without verification to get expiry
-      const decoded = this.authService.decodeToken(accessToken) as { exp: number };
-      const now = Math.floor(Date.now() / 1000);
-      const timeUntilExpiry = decoded.exp - now;
-      
-      // Should refresh if less than 30 seconds remaining (for 1-minute token)
-      const shouldRefresh = timeUntilExpiry < 30; // 30 seconds
-      
-      return {
-        hasToken: true,
-        isValid: timeUntilExpiry > 0,
-        timeUntilExpiry: Math.max(0, timeUntilExpiry),
-        shouldRefresh,
-        expiresAt: new Date(decoded.exp * 1000).toISOString(),
-      };
-    } catch {
-      return { 
-        hasToken: true, 
-        isValid: false, 
-        timeUntilExpiry: 0,
-        shouldRefresh: true 
-      };
-    }
-  }
-
   @Post('refresh')
   @Public()
   @HttpCode(HttpStatus.OK)
@@ -138,19 +98,30 @@ export class AuthController {
     const refreshToken = req.cookies['refresh_token'] as string;
     
     if (!refreshToken) {
-      return { success: false, message: 'Refresh token not found' };
+      // Clear cookies and throw proper 401 error
+      res.clearCookie('access_token');
+      res.clearCookie('refresh_token');
+      res.status(HttpStatus.UNAUTHORIZED);
+      throw new Error('Phiên đăng nhập đã hết hạn');
     }
 
     try {
       const result = await this.authService.refreshToken(refreshToken);
+      
+      if (!result) {
+        // Clear cookies and throw proper 401 error
+        res.clearCookie('access_token');
+        res.clearCookie('refresh_token');
+        res.status(HttpStatus.UNAUTHORIZED);
+        throw new Error('Phiên đăng nhập đã hết hạn');
+      }
       
       // Set new access token cookie
       res.cookie('access_token', result.access_token, {
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
         sameSite: 'lax',
-        maxAge: 1 * 60 * 1000, // 15 minutes
-
+        maxAge: 15 * 60 * 1000, // 15 minutes for testing
       });
 
       // Optionally set new refresh token if provided
@@ -166,13 +137,14 @@ export class AuthController {
       return { 
         success: true, 
         message: 'Token refreshed successfully',
-        expires_in: result.expires_in,
+        expires_in: result.expires_in || 60,
       };
     } catch {
-      // Clear cookies if refresh fails
+      // Clear cookies and throw proper 401 error
       res.clearCookie('access_token');
       res.clearCookie('refresh_token');
-      return { success: false, message: 'Token refresh failed' };
+      res.status(HttpStatus.UNAUTHORIZED);
+      throw new Error('Phiên đăng nhập đã hết hạn');
     }
   }
 
@@ -197,10 +169,10 @@ export class AuthController {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
-      maxAge: 1 * 60 * 1000, // 1 minute for testing
+      maxAge: 15 * 60 * 1000, // 15 minutes for testing
     });
 
-    // Set HTTP-only cookie for refresh token if provided
+    // Set` HTTP-only cookie for refresh token if provided
     if (refresh_token) {
       res.cookie('refresh_token', refresh_token, {
         httpOnly: true,

@@ -36,16 +36,16 @@ export class JwtAuthGuard implements CanActivate {
     }
 
     const request = context.switchToHttp().getRequest();
-    const response = context.switchToHttp().getResponse();
     
     // Extract token from HTTP-only cookie first, then fallback to Authorization header
     const token = this.extractTokenFromCookie(request) || this.extractTokenFromHeader(request);
+    
     if (!token) {
       throw new UnauthorizedException('Access token is required');
     }
 
     try {
-      // Try to verify access token
+      // Verify access token
       const payload: JwtPayload = this.tokensService.verifyAccessToken(token);
       
       // Get user info and attach to request
@@ -60,115 +60,10 @@ export class JwtAuthGuard implements CanActivate {
       
       return true;
     } catch (error) {
-      // Check if it's a token expiration error
-      if (
-        error instanceof Error && 
-        error.message.includes('Access token has expired')
-      ) {
-        // Try to refresh token automatically
-        const refreshResult = await this.tryRefreshToken(request, response);
-        if (refreshResult) {
-          return true;
-        }
-      }
-      
-      // If not expired or refresh failed, throw original error
+      // Simply throw error - let interceptor handle refresh
       throw new UnauthorizedException(
         error instanceof Error ? error.message : 'Invalid or expired token',
       );
-    }
-  }
-
-  private async tryRefreshToken(request: any, response: any): Promise<boolean> {
-    try {
-      // Get refresh token from cookie first, then try to get user ID from expired access token
-      let refreshToken = request.cookies?.refresh_token;
-      let userId: number | null = null;
-
-      if (refreshToken) {
-        // If we have refresh token from cookie, verify it to get user ID
-        try {
-          const refreshPayload = await this.tokensService.verifyRefreshToken(refreshToken);
-          userId = refreshPayload.sub;
-        } catch {
-          // Refresh token is invalid/expired
-          refreshToken = null;
-        }
-      }
-
-      if (!refreshToken || !userId) {
-        // Try fallback method: get user ID from expired access token
-        const accessToken = this.extractTokenFromCookie(request) || this.extractTokenFromHeader(request);
-        if (!accessToken) {
-          throw new UnauthorizedException('Phiên đăng nhập đã hết hạn');
-        }
-
-        // Decode token without verification to get user ID
-        const decodedToken = this.tokensService.decodeTokenWithoutVerification(accessToken);
-        if (!decodedToken || !decodedToken.sub) {
-          throw new UnauthorizedException('Phiên đăng nhập đã hết hạn');
-        }
-
-        userId = decodedToken.sub;
-        
-        if (!userId) {
-          throw new UnauthorizedException('Phiên đăng nhập đã hết hạn');
-        }
-        
-        const userAgent = request.headers['user-agent'] || '';
-
-        // Find active refresh token in database for this user and user-agent
-        const refreshTokenEntity = await this.tokensService.findActiveRefreshToken(userId, userAgent);
-        if (!refreshTokenEntity) {
-          throw new UnauthorizedException('Phiên đăng nhập đã hết hạn');
-        }
-
-        refreshToken = refreshTokenEntity.token;
-      }
-
-      // Verify the refresh token
-      const payload = await this.tokensService.verifyRefreshToken(refreshToken);
-      
-      // Get user information
-      const user = await this.usersService.findOne(payload.sub);
-      if (!user) {
-        throw new UnauthorizedException('User not found');
-      }
-
-      // Generate new access token
-      const newAccessToken = this.tokensService.generateAccessToken(user);
-      
-      // Update request headers with new token for backward compatibility
-      request.headers.authorization = `Bearer ${newAccessToken}`;
-      
-      // Set new access token in HTTP-only cookie
-      response.cookie('access_token', newAccessToken, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'lax',
-        maxAge: 15 * 60 * 1000, // 15 minutes
-      });
-      
-      // Set new token in response header for client to update (backward compatibility)
-      response.setHeader('X-New-Access-Token', newAccessToken);
-      
-      // Attach user to request
-      request.user = user;
-      request.tokenPayload = this.tokensService.verifyAccessToken(newAccessToken);
-
-      return true;
-    } catch (refreshError) {
-      // If refresh token is also expired or invalid, clear cookies
-      response.clearCookie('access_token');
-      response.clearCookie('refresh_token');
-      
-      if (
-        refreshError instanceof Error && 
-        refreshError.message.includes('expired')
-      ) {
-        throw new UnauthorizedException('Phiên đăng nhập đã hết hạn');
-      }
-      throw new UnauthorizedException('Phiên đăng nhập đã hết hạn');
     }
   }
 
