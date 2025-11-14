@@ -88,17 +88,10 @@ export class EventsController {
   }
 
   @Public()
-  @Post('uuid/:uuid/likes')
-  async incrementLikesByUuid(@Param('uuid') uuid: string): Promise<{ message: string }> {
-    await this.eventsService.incrementEventLikesByUuid(uuid);
-    return { message: 'Likes incremented successfully' };
-  }
-
-  @Public()
-  @Post('uuid/:uuid/comments')
-  async incrementCommentsByUuid(@Param('uuid') uuid: string): Promise<{ message: string }> {
-    await this.eventsService.incrementEventCommentsByUuid(uuid);
-    return { message: 'Comments incremented successfully' };
+  @Post('slug/:slug/views')
+  async incrementViewsBySlug(@Param('slug') slug: string): Promise<{ message: string }> {
+    await this.eventsService.incrementEventViewsBySlug(slug);
+    return { message: 'Views incremented successfully' };
   }
 
   @Post('backfill-uuids')
@@ -181,6 +174,12 @@ export class EventsController {
   @Get('uuid/:uuid')
   async getEventByUuid(@Param('uuid') uuid: string): Promise<any> {
     return await this.eventsService.getEventByUuid(uuid);
+  }
+
+  @Public()
+  @Get('slug/:slug')
+  async getEventBySlug(@Param('slug') slug: string): Promise<any> {
+    return await this.eventsService.getEventBySlug(slug);
   }
 
 }

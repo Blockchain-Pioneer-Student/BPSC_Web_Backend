@@ -158,6 +158,10 @@ export class EventsRepository {
     });
   }
 
+  async findEventBySlug(slug: string): Promise<Event | null> {
+    return await this.eventRepository.findOne({ where: { slug } });
+  }
+
   async findEventSchedulesByEventId(eventId: number): Promise<EventSchedule[]> {
     return await this.eventScheduleRepository.find({
       where: { event_id: eventId },
@@ -362,14 +366,6 @@ export class EventsRepository {
 
   async incrementViews(id: number): Promise<void> {
     await this.eventRepository.increment({ id }, 'views', 1);
-  }
-
-  async incrementLikes(id: number): Promise<void> {
-    await this.eventRepository.increment({ id }, 'likes', 1);
-  }
-
-  async incrementComments(id: number): Promise<void> {
-    await this.eventRepository.increment({ id }, 'comments', 1);
   }
 
   // Delete methods for related entities

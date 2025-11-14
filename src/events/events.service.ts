@@ -53,6 +53,14 @@ export class EventsService {
     };
   }
 
+  async getEventBySlug(slug: string): Promise<any> {
+    const event = await this.eventsRepository.findEventBySlug(slug);
+    if (!event) {
+      throw new NotFoundException(`Event with slug '${slug}' not found`);
+    }
+    return event;
+  }
+
   // Additional service methods using repository
   async getAllCategories(): Promise<any[]> {
     return await this.eventsRepository.findAllCategories();
@@ -78,20 +86,12 @@ export class EventsService {
     await this.eventsRepository.incrementViews(event.id);
   }
 
-  async incrementEventLikesByUuid(event_uuid: string): Promise<void> {
-    const event = await this.eventsRepository.findEventByUuid(event_uuid);
+  async incrementEventViewsBySlug(slug: string): Promise<void> {
+    const event = await this.eventsRepository.findEventBySlug(slug);
     if (!event) {
-      throw new NotFoundException(`Event with UUID ${event_uuid} not found`);
+      throw new NotFoundException(`Event with slug '${slug}' not found`);
     }
-    await this.eventsRepository.incrementLikes(event.id);
-  }
-
-  async incrementEventCommentsByUuid(event_uuid: string): Promise<void> {
-    const event = await this.eventsRepository.findEventByUuid(event_uuid);
-    if (!event) {
-      throw new NotFoundException(`Event with UUID ${event_uuid} not found`);
-    }
-    await this.eventsRepository.incrementComments(event.id);
+    await this.eventsRepository.incrementViews(event.id);
   }
 
   async createEvent(createEventDto: CreateEventDto): Promise<any> {
