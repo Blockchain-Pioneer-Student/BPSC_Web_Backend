@@ -7,9 +7,9 @@ import { Event } from './entity/events.entity';
 import { EventCategory } from './entity/event_categories.entity';
 import { EventSchedule } from './entity/event_schedules.entity';
 import { EventSpeaker } from './entity/event_speakers.entity';
-import { UploadService } from '../upload/upload.service';
-import { CloudinaryConfig } from '../config/cloudinary.config';
-import { AuthModule } from '../auth/auth.module';
+import { UploadService } from '../shared/upload/upload.service';
+import { CloudinaryConfig } from '../core/config/cloudinary.config';
+import { AuthModule } from '../core/auth/auth.module';
 import { UsersModule } from '../users/users.module';
 
 @Module({

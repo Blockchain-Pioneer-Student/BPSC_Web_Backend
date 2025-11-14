@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable prettier/prettier */
 import { Injectable, UnauthorizedException, ConflictException } from '@nestjs/common';
-import { UsersService } from '../users/users.service';
+import { UsersService } from '../../users/users.service';
 import { TokensService } from './tokens.service';
 import { LoginDto } from './dto/login.dto';
 import { CreateRootDto } from './dto/create-root.dto';

@@ -4,8 +4,8 @@ import { Module } from '@nestjs/common';
 import { MulterModule } from '@nestjs/platform-express';
 import { UploadController } from './upload.controller';
 import { UploadService } from './upload.service';
-import { CloudinaryConfig } from '../config/cloudinary.config';
-import { storage, imageFileFilter, limits } from '../middleware/multer.middleware';
+import { CloudinaryConfig } from '../../core/config/cloudinary.config';
+import { storage, imageFileFilter, limits } from '../../core/middleware/multer.middleware';
 
 @Module({
   imports: [

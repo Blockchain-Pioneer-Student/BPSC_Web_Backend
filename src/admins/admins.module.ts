@@ -5,7 +5,7 @@ import { AdminsService } from './admins.service';
 import { AdminsRepository } from './admins.repository';
 import { Admin } from './entity/admins.entity';
 import { UsersModule } from '../users/users.module';
-import { AuthModule } from '../auth/auth.module';
+import { AuthModule } from '../core/auth/auth.module';
 
 @Module({
   imports: [TypeOrmModule.forFeature([Admin]), UsersModule, AuthModule],

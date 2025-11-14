@@ -9,9 +9,9 @@ import {
 } from '@nestjs/common';
 import { AdminsService } from './admins.service';
 import { CreateAdminDto } from './dto/create-admin.dto';
-import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
-import { RolesGuard } from '../auth/guards/roles.guard';
-import { Roles } from '../auth/decorators/roles.decorator';
+import { JwtAuthGuard } from '../core/auth/guards/jwt-auth.guard';
+import { RolesGuard } from '../core/auth/guards/roles.guard';
+import { Roles } from '../core/auth/decorators/roles.decorator';
 
 @Controller('admins')
 @UseGuards(JwtAuthGuard, RolesGuard)

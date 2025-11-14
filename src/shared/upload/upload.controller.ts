@@ -15,7 +15,7 @@ import {
 import { FileInterceptor, FilesInterceptor } from '@nestjs/platform-express';
 import { extname } from 'path';
 import { UploadService } from './upload.service';
-import { singleFileOptions, multipleFilesOptions } from '../middleware/multer.middleware';
+import { singleFileOptions, multipleFilesOptions } from '../../core/middleware/multer.middleware';
 
 @Controller('upload')
 export class UploadController {

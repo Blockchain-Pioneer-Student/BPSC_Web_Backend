@@ -4,7 +4,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { Contact } from './entity/contacts.entity';
 import { ContactsController } from './contacts.controller';
 import { ContactsService } from './contacts.service';
-import { AuthModule } from 'src/auth/auth.module';
+import { AuthModule } from 'src/core/auth/auth.module';
 
 @Module({
   imports: [TypeOrmModule.forFeature([Contact]),

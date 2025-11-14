@@ -7,8 +7,8 @@ import { AuthService } from './auth.service';
 import { TokensService } from './tokens.service';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { RolesGuard } from './guards/roles.guard';
-import { UsersModule } from '../users/users.module';
-import { User } from '../users/entity/users.entity';
+import { UsersModule } from '../../users/users.module';
+import { User } from '../../users/entity/users.entity';
 import { RefreshToken } from './entity/refresh-token.entity';
 
 @Module({

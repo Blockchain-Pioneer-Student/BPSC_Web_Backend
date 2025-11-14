@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn, CreateDateColumn } from 'typeorm';
-import { User } from '../../users/entity/users.entity';
+import { User } from '../../../users/entity/users.entity';
 
 @Entity('refresh_tokens')
 export class RefreshToken {

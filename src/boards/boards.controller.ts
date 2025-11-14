@@ -2,10 +2,10 @@ import { Controller, Get, Post, Body, Param, Put, Delete, UseGuards } from '@nes
 import { BoardsService } from './boards.service';
 import { CreateBoardDto } from './dto/create-board.dto';
 import { UpdateBoardDto } from './dto/update-board.dto';
-import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
-import { RolesGuard } from '../auth/guards/roles.guard';
-import { Roles } from '../auth/decorators/roles.decorator';
-import { Public } from '../auth/decorators/public.decorator';
+import { JwtAuthGuard } from '../core/auth/guards/jwt-auth.guard';
+import { RolesGuard } from '../core/auth/guards/roles.guard';
+import { Roles } from '../core/auth/decorators/roles.decorator';
+import { Public } from '../core/auth/decorators/public.decorator';
 
 @Controller('boards')
 @UseGuards(JwtAuthGuard, RolesGuard)

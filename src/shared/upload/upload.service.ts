@@ -3,8 +3,8 @@
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
 /* eslint-disable @typescript-eslint/no-unsafe-member-access */
 import { Injectable, BadRequestException } from '@nestjs/common';
-import { CloudinaryConfig } from '../config/cloudinary.config';
-import cloudinary from '../config/cloudinary.config';
+import { CloudinaryConfig } from '../../core/config/cloudinary.config';
+import cloudinary from '../../core/config/cloudinary.config';
 import * as fs from 'fs';
 
 @Injectable()

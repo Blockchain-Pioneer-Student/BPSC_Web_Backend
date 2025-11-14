@@ -12,10 +12,10 @@ import {
 import { ContactsService } from './contacts.service';
 import { CreateContactDto } from './dto/create-contact.dto';
 import { Contact } from './entity/contacts.entity';
-import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
-import { RolesGuard } from '../auth/guards/roles.guard';
-import { Roles } from '../auth/decorators/roles.decorator';
-import { Public } from '../auth/decorators/public.decorator';
+import { JwtAuthGuard } from '../core/auth/guards/jwt-auth.guard';
+import { RolesGuard } from '../core/auth/guards/roles.guard';
+import { Roles } from '../core/auth/decorators/roles.decorator';
+import { Public } from '../core/auth/decorators/public.decorator';
 
 @Controller('contacts')
 @UseGuards(JwtAuthGuard, RolesGuard)

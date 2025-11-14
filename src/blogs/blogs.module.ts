@@ -1,9 +1,9 @@
 /* eslint-disable prettier/prettier */
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { UploadService } from '../upload/upload.service';
-import { CloudinaryConfig } from '../config/cloudinary.config';
-import { AuthModule } from '../auth/auth.module';
+import { UploadService } from '../shared/upload/upload.service';
+import { CloudinaryConfig } from '../core/config/cloudinary.config';
+import { AuthModule } from '../core/auth/auth.module';
 import { BlogsController } from './blogs.controller';
 import { BlogsService } from './blogs.service';
 import { BlogsRepository } from './blogs.repository';

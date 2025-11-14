@@ -1,7 +1,7 @@
 import { Controller, Get, Post, Body } from '@nestjs/common';
 import { BlockchainAreasService } from './blockchain_areas.service';
 import { BlockchainArea } from './entity/blockchain_areas.entity';
-import { Public } from '../auth/decorators/public.decorator';
+import { Public } from '../core/auth/decorators/public.decorator';
 
 @Controller('blockchain-areas')
 export class BlockchainAreasController {

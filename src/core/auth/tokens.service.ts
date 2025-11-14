@@ -12,7 +12,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, IsNull } from 'typeorm';
 import { RefreshToken } from './entity/refresh-token.entity';
 import { JwtPayload } from './dto/login-response.dto';
-import { User } from '../users/entity/users.entity';
+import { User } from '../../users/entity/users.entity';
 
 @Injectable()
 export class TokensService {

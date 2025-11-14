@@ -17,11 +17,11 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { singleFileOptions } from 'src/middleware/multer.middleware';
-import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
-import { RolesGuard } from '../auth/guards/roles.guard';
-import { Roles } from '../auth/decorators/roles.decorator';
-import { Public } from '../auth/decorators/public.decorator';
+import { singleFileOptions } from 'src/core/middleware/multer.middleware';
+import { JwtAuthGuard } from '../core/auth/guards/jwt-auth.guard';
+import { RolesGuard } from '../core/auth/guards/roles.guard';
+import { Roles } from '../core/auth/decorators/roles.decorator';
+import { Public } from '../core/auth/decorators/public.decorator';
 import { BlogsService } from './blogs.service';
 import {Blog} from './entity/blogs.entity';
 
@@ -36,9 +36,9 @@ export class BlogsController{
         return await this.blogsService.getAllBlogs();
     }
 
-    @Public()
-    @Get('get-all-published')
-    async getAllPublishedBlogs(): Promise<Blog[]> {
-        return await this.blogsService.getAllPublishedBlogs();
-    }
+    // @Public()
+    // @Get('get-all-published')
+    // async getAllPublishedBlogs(): Promise<Blog[]> {
+    //     // return await this.blogsService.getAllPublishedBlogs();
+    // }
 }

@@ -8,7 +8,7 @@ import { MembersController } from './members.controller';
 import { MembersService } from './members.service';
 import { MembersRepository } from './members.repository';
 import { BoardsModule } from '../boards/boards.module';
-import { AuthModule } from 'src/auth/auth.module';
+import { AuthModule } from 'src/core/auth/auth.module';
 
 @Module({
   imports: [

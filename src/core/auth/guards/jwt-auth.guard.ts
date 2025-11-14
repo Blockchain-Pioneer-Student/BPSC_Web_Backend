@@ -12,7 +12,7 @@ import {
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { TokensService } from '../tokens.service';
-import { UsersService } from '../../users/users.service';
+import { UsersService } from '../../../users/users.service';
 import { JwtPayload } from '../dto/login-response.dto';
 import { IS_PUBLIC_KEY } from '../decorators/public.decorator';
 

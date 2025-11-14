@@ -3,7 +3,7 @@
 /* eslint-disable prettier/prettier */
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { EventsRepository } from './events.repository';
-import { UploadService } from '../upload/upload.service';
+import { UploadService } from '../shared/upload/upload.service';
 import { CreateEventDto } from './dto/create-event.dto';
 import { UpdateEventDto } from './dto/update-event.dto';
 

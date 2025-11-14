@@ -1,6 +1,6 @@
 /* eslint-disable prettier/prettier */
 import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn } from 'typeorm';
-import { Role } from '../../roles/entity/roles.entity';
+import { Role } from '../../core/auth/roles/entity/roles.entity';
 
 @Entity('users')
 export class User {

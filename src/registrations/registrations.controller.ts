@@ -3,11 +3,11 @@ import { Controller, Post, Get, Delete, Body, Param, UsePipes, ValidationPipe, P
 import { RegistrationsService } from './registrations.service';
 import { CreateRegistrationDto } from './dto/create-registration.dto';
 import { Registration } from './entity/registrations.entity';
-import { Public } from '../auth/decorators/public.decorator';
-import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { Public } from '../core/auth/decorators/public.decorator';
+import { JwtAuthGuard } from '../core/auth/guards/jwt-auth.guard';
 import { UseGuards } from '@nestjs/common/decorators/core/use-guards.decorator';
-import { RolesGuard } from '../auth/guards/roles.guard';
-import { Roles } from 'src/auth/decorators/roles.decorator';
+import { RolesGuard } from '../core/auth/guards/roles.guard';
+import { Roles } from 'src/core/auth/decorators/roles.decorator';
 @UseGuards(JwtAuthGuard)
 @Controller('registrations')
 export class RegistrationsController {
