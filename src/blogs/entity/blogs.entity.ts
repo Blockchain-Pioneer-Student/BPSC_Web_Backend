@@ -7,7 +7,8 @@ import {
     CreateDateColumn,
     UpdateDateColumn,
     JoinTable,
-    ManyToMany
+    ManyToMany,
+    JoinColumn
 } from 'typeorm';
 import { BlogCategory } from './blog_categories.entity';
 import { BlogTag } from './blog_tags.entity';
@@ -16,6 +17,9 @@ import { BlogTag } from './blog_tags.entity';
 export class Blog {
     @PrimaryGeneratedColumn()
     id: number;
+
+    @Column({ type: 'uuid', unique: true, nullable: false, default: () => 'gen_random_uuid()' })
+    blog_uuid: string;
 
     @Column({ type: 'varchar', length: 200, nullable: false })
     title: string;
@@ -56,9 +60,20 @@ export class Blog {
     @ManyToOne(() => BlogCategory, (category) => category.id, {
         onDelete: 'SET NULL',
     })
+    @JoinColumn({ name: "category_id" }) // FIX quan trọng
     category: BlogCategory;
 
-    @ManyToMany(() => BlogTag)
-    @JoinTable()
-    tags : BlogTag[];
+    @ManyToMany(() => BlogTag, (tag) => tag.id)
+    @JoinTable({
+        name: 'blog_to_tags', // bảng trung gian đúng trong DB
+        joinColumn: {
+            name: 'blog_id',       // cột FK trỏ về Blog
+            referencedColumnName: 'id',
+        },
+        inverseJoinColumn: {
+            name: 'tag_id',        // cột FK trỏ về Tag
+            referencedColumnName: 'id',
+        },
+    })
+    tags: BlogTag[];
 }

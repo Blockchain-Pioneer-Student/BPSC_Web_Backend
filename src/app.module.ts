@@ -16,6 +16,7 @@ import { ContactsModule } from './contacts/contacts.module';
 import { RegistrationsModule } from './registrations/registrations.module';
 import { BlockchainAreasModule } from './blockchain_areas/blockchain_areas.module';
 import { UploadModule } from './upload/upload.module';
+import { BlogsModule } from './blogs/blogs.module';
 @Module({
   imports: [
     // Config module để đọc .env
@@ -58,6 +59,7 @@ import { UploadModule } from './upload/upload.module';
     RegistrationsModule,
     BlockchainAreasModule,
     UploadModule,
+    BlogsModule,
   ],
   controllers: [AppController],
   providers: [
