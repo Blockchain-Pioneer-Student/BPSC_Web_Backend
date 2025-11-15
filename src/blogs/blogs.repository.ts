@@ -32,6 +32,28 @@ export class BlogsRepository {
     });
   }
 
+  async findOneBySlug(slug: string): Promise<Blog | null> {
+    return this.blogRepository.findOne({
+      where: { slug },
+      relations: ['category', 'tags'],
+    });
+  }
+
+  async findOneByUuid(uuid: string): Promise<Blog | null> {
+    return this.blogRepository.findOne({
+      where: { blog_uuid: uuid },
+      relations: ['category', 'tags'],
+    });
+  }
+
+  async save(blog: Blog): Promise<Blog> {
+    return this.blogRepository.save(blog);
+  }
+
+  async remove(blog: Blog): Promise<void> {
+    await this.blogRepository.remove(blog);
+  }
+
   async createBlog(dto: CreateBlogDto): Promise<Blog> {
     // Parse tags nếu là string
     const tags = Array.isArray(dto.tags)
@@ -79,5 +101,13 @@ export class BlogsRepository {
 
     // Return đúng entity
     return finalBlog;
+  }
+
+  async findAllCategories(): Promise<any[]> {
+    return await this.blogCategoryRepository.find();
+  }
+
+  async findCategoryById(id: number): Promise<any> {
+    return await this.blogCategoryRepository.findOne({ where: { id } });
   }
 }

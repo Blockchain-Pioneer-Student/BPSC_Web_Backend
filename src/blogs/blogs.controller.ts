@@ -23,40 +23,113 @@ import { RolesGuard } from '../core/auth/guards/roles.guard';
 import { Roles } from '../core/auth/decorators/roles.decorator';
 import { Public } from '../core/auth/decorators/public.decorator';
 import { BlogsService } from './blogs.service';
-import {Blog} from './entity/blogs.entity';
-import { parseBlogFormData} from './dto/blog-form-data.helper';
+import { Blog } from './entity/blogs.entity';
+import { parseBlogFormData } from './dto/blog-form-data.helper';
 
 @Controller('blogs')
 @UseGuards(JwtAuthGuard, RolesGuard)
-export class BlogsController{
-    constructor(private readonly blogsService: BlogsService) {}
+export class BlogsController {
+  constructor(private readonly blogsService: BlogsService) {}
 
-    @Get('get-all')
-    @Public()
-    async getAllBlogs(): Promise<Blog[]> {
-        return await this.blogsService.getAllBlogs();
-    }
+  @Get('get-all')
+  @Roles('admin')
+  async getAllBlogs(
+    @Query('sort') sort?: string,
+    @Query('limit') limit?: string,
+    @Query('category') category?: string,
+    @Query('search') search?: string,
+  ): Promise<Blog[]> {
+    const limitNum = limit ? parseInt(limit, 10) : undefined;
+    return await this.blogsService.getAllBlogs(sort, limitNum, category, search);
+  }
 
-    // @Public()
-    // @Get('get-all-published')
-    // async getAllPublishedBlogs(): Promise<Blog[]> {
-    //     return await this.blogsService.getAllPublishedBlogs();
-    // }
-    @Post('create')
-    @Public()
-    @UseInterceptors(FileInterceptor('thumbnail_image', singleFileOptions))
-    async createBlog(
-      @Body() body:any,
-      @UploadedFile()
-      thumbnail_image: {
-        path: string;
-        originalname: string;
-        size: number;
-        mimetype: string;
-      },
-    ) :Promise<any>{
-      const createBlogDto = parseBlogFormData(body, thumbnail_image);
-      return await this.blogsService.createBlog(createBlogDto);
-    }
+  @Public()
+  @Get('get-all-published')
+  async getAllPublishedBlogs(
+    @Query('sort') sort?: string,
+    @Query('limit') limit?: string,
+    @Query('category') category?: string,
+    @Query('search') search?: string,
+  ): Promise<Blog[]> {
+    const limitNum = limit ? parseInt(limit, 10) : undefined;
+    return await this.blogsService.getAllPublishedBlogs(
+      sort,
+      limitNum,
+      category,
+      search,
+    );
+  }
 
+  @Public()
+  @Post('slug/:slug/views')
+  async incrementViewsBySlug(@Param('slug') slug: string): Promise<{ message: string }> {
+    await this.blogsService.incrementBlogViewsBySlug(slug);
+    return { message: 'Views incremented successfully' };
+  }
+
+  @Post('create')
+  @Roles('admin')
+  @UseInterceptors(FileInterceptor('thumbnail_image', singleFileOptions))
+  async createBlog(
+    @Body() body: any,
+    @UploadedFile()
+    thumbnail_image?: {
+      path: string;
+      originalname: string;
+      size: number;
+      mimetype: string;
+    },
+  ): Promise<any> {
+    const createBlogDto = parseBlogFormData(body, thumbnail_image);
+    return await this.blogsService.createBlog(createBlogDto);
+  }
+
+  @Patch('update/:uuid')
+  @Roles('admin')
+  @UseInterceptors(FileInterceptor('thumbnail_image', singleFileOptions))
+  async updateBlog(
+    @Param('uuid') uuid: string,
+    @Body() body: any,
+    @UploadedFile()
+    thumbnail_image?: {
+      path: string;
+      originalname: string;
+      size: number;
+      mimetype: string;
+    },
+  ): Promise<any> {
+    const updateBlogDto = parseBlogFormData(body, thumbnail_image);
+    return await this.blogsService.updateBlogByUuid(uuid, updateBlogDto);
+  }
+
+  @Delete('uuid/:uuid')
+  @Roles('admin')
+  async deleteBlogByUuid(@Param('uuid') uuid: string): Promise<any> {
+    return await this.blogsService.deleteBlogByUuid(uuid);
+  }
+
+  @Public()
+  @Get('uuid/:uuid')
+  async getBlogByUuid(@Param('uuid') uuid: string): Promise<any> {
+    return await this.blogsService.getBlogByUuid(uuid);
+  }
+
+  @Public()
+  @Get('slug/:slug')
+  async getBlogBySlug(@Param('slug') slug: string): Promise<any> {
+    return await this.blogsService.getBlogBySlug(slug);
+  }
+
+  @Public()
+  @Get('categories')
+  async getAllCategories(): Promise<any> {
+    return await this.blogsService.getAllCategories();
+  }
+
+  @Public()
+  @Get('categories/:id')
+  async getCategoryById(@Param('id') id: string): Promise<any> {
+    const categoryId = parseInt(id, 10);
+    return await this.blogsService.getCategoryById(categoryId);
+  }
 }
