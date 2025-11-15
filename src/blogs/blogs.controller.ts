@@ -24,6 +24,7 @@ import { Roles } from '../core/auth/decorators/roles.decorator';
 import { Public } from '../core/auth/decorators/public.decorator';
 import { BlogsService } from './blogs.service';
 import {Blog} from './entity/blogs.entity';
+import { parseBlogFormData} from './dto/blog-form-data.helper';
 
 @Controller('blogs')
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -31,7 +32,7 @@ export class BlogsController{
     constructor(private readonly blogsService: BlogsService) {}
 
     @Get('get-all')
-    @Roles('admin')
+    @Public()
     async getAllBlogs(): Promise<Blog[]> {
         return await this.blogsService.getAllBlogs();
     }
@@ -39,6 +40,23 @@ export class BlogsController{
     // @Public()
     // @Get('get-all-published')
     // async getAllPublishedBlogs(): Promise<Blog[]> {
-    //     // return await this.blogsService.getAllPublishedBlogs();
+    //     return await this.blogsService.getAllPublishedBlogs();
     // }
+    @Post('create')
+    @Public()
+    @UseInterceptors(FileInterceptor('thumbnail_image', singleFileOptions))
+    async createBlog(
+      @Body() body:any,
+      @UploadedFile()
+      thumbnail_image: {
+        path: string;
+        originalname: string;
+        size: number;
+        mimetype: string;
+      },
+    ) :Promise<any>{
+      const createBlogDto = parseBlogFormData(body, thumbnail_image);
+      return await this.blogsService.createBlog(createBlogDto);
+    }
+
 }
