@@ -25,7 +25,7 @@ import { Public } from '../core/auth/decorators/public.decorator';
 import { BlogsService } from './blogs.service';
 import { Blog } from './entity/blogs.entity';
 import { parseBlogFormData } from './dto/blog-form-data.helper';
-
+import { PublishedBlogDto } from './dto/published-blog.dto';
 @Controller('blogs')
 @UseGuards(JwtAuthGuard, RolesGuard)
 export class BlogsController {
@@ -50,7 +50,7 @@ export class BlogsController {
     @Query('limit') limit?: string,
     @Query('category') category?: string,
     @Query('search') search?: string,
-  ): Promise<Blog[]> {
+  ): Promise<PublishedBlogDto[]> {
     const limitNum = limit ? parseInt(limit, 10) : undefined;
     return await this.blogsService.getAllPublishedBlogs(
       sort,

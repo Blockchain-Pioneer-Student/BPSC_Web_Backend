@@ -27,7 +27,7 @@ import { JwtAuthGuard } from '../core/auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../core/auth/guards/roles.guard';
 import { Roles } from '../core/auth/decorators/roles.decorator';
 import { Public } from '../core/auth/decorators/public.decorator';
-
+import { ActiveEventDto } from './dto/active-event.dto';
 @Controller('events')
 @UseGuards(JwtAuthGuard, RolesGuard)
 export class EventsController {
@@ -57,7 +57,7 @@ export class EventsController {
     @Query('limit') limit?: string,
     @Query('category') category?: string,
     @Query('search') search?: string,
-  ): Promise<Event[]> {
+  ): Promise<ActiveEventDto[]> {
     const limitNum = limit ? parseInt(limit, 10) : undefined;
     return await this.eventsService.getAllActiveEvents(
       sort,

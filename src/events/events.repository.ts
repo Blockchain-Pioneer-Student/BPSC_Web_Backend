@@ -92,56 +92,40 @@ export class EventsRepository {
     category?: string,
     search?: string,
   ): Promise<Event[]> {
-    const queryBuilder = this.eventRepository
+    const qb = this.eventRepository
       .createQueryBuilder('event')
       .leftJoinAndSelect('event.category', 'category')
-      .where('event.is_visible = :isVisible', { isVisible: true });
+      .leftJoinAndSelect('event.schedules', 'schedules')
+      .leftJoinAndSelect('event.speakers', 'speakers')
+      .where('event.is_visible = :v', { v: true });
 
-    // Handle category filter - using the new relationship
-    if (category && category.trim() !== '') {
-      queryBuilder.andWhere('category.name = :category', { category });
+    if (category?.trim()) {
+      qb.andWhere('category.name = :category', { category });
     }
 
-    // Handle search filter
-    if (search && search.trim() !== '') {
-      queryBuilder.andWhere(
-        '(LOWER(event.title) LIKE LOWER(:search) OR LOWER(event.excerpt) LIKE LOWER(:search) OR LOWER(event.location) LIKE LOWER(:search))',
-        { search: `%${search}%` },
-      );
+    if (search?.trim()) {
+      qb.andWhere(`
+      LOWER(event.title) LIKE LOWER(:s) 
+      OR LOWER(event.excerpt) LIKE LOWER(:s) 
+      OR LOWER(event.location) LIKE LOWER(:s)
+    `, { s: `%${search}%` });
     }
 
-    // Handle sorting
+    // Sorting
+    const allowed = ['views', 'likes', 'comments', 'created_at', 'updated_at', 'date', 'title'];
     if (sort) {
       const [field, order] = sort.split('_');
-      const orderDirection = order?.toUpperCase() === 'DESC' ? 'DESC' : 'ASC';
-
-      // Validate field exists in entity
-      const allowedFields = [
-        'views',
-        'likes',
-        'comments',
-        'created_at',
-        'updated_at',
-        'date',
-        'title',
-      ];
-      if (allowedFields.includes(field)) {
-        queryBuilder.orderBy(`event.${field}`, orderDirection);
-      } else {
-        // Default sort by created_at DESC if invalid field
-        queryBuilder.orderBy('event.created_at', 'DESC');
-      }
+      qb.orderBy(
+        allowed.includes(field) ? `event.${field}` : 'event.created_at',
+        order?.toUpperCase() === 'ASC' ? 'ASC' : 'DESC',
+      );
     } else {
-      // Default sort by created_at DESC
-      queryBuilder.orderBy('event.created_at', 'DESC');
+      qb.orderBy('event.created_at', 'DESC');
     }
 
-    // Handle limit
-    if (limit && limit > 0) {
-      queryBuilder.limit(limit);
-    }
+    if (limit && limit > 0) qb.limit(limit);
 
-    return await queryBuilder.getMany();
+    return await qb.getMany();
   }
 
   async findEventById(id: number): Promise<Event | null> {
@@ -159,7 +143,10 @@ export class EventsRepository {
   }
 
   async findEventBySlug(slug: string): Promise<Event | null> {
-    return await this.eventRepository.findOne({ where: { slug } });
+    return await this.eventRepository.findOne({
+      where: { slug },
+      relations: ['category', 'schedules', 'speakers'],
+    });
   }
 
   async findEventSchedulesByEventId(eventId: number): Promise<EventSchedule[]> {
@@ -199,7 +186,7 @@ export class EventsRepository {
 
     // Create event data without relations
     const { schedules: _, speakers: __, image_file: ___, ...eventData } = dto;
-    
+
     const event = this.eventRepository.create({
       ...eventData,
       event_uuid: randomUUID(),
@@ -209,7 +196,7 @@ export class EventsRepository {
 
     // Handle schedules creation
     if (schedules.length > 0) {
-      const scheduleEntities = schedules.map(schedule => 
+      const scheduleEntities = schedules.map(schedule =>
         this.eventScheduleRepository.create({
           ...schedule,
           event: savedEvent,
@@ -221,7 +208,7 @@ export class EventsRepository {
 
     // Handle speakers creation
     if (speakers.length > 0) {
-      const speakerEntities = speakers.map(speaker => 
+      const speakerEntities = speakers.map(speaker =>
         this.eventSpeakerRepository.create({
           ...speaker,
           event: savedEvent,
@@ -238,7 +225,7 @@ export class EventsRepository {
     try {
       // Separate relational data from basic fields
       const { schedules, speakers, image_file, ...basicFields } = dto;
-      
+
       // Update basic fields first (excluding relations and files)
       if (Object.keys(basicFields).length > 0) {
         await this.eventRepository.update(id, basicFields);
@@ -248,11 +235,11 @@ export class EventsRepository {
       if (schedules !== undefined) {
         // First, delete existing schedules for this event
         await this.eventScheduleRepository.delete({ event_id: id });
-        
+
         // Then create new schedules if any
         if (schedules && schedules.length > 0) {
           const parsedSchedules = typeof schedules === 'string' ? JSON.parse(schedules) : schedules;
-          const scheduleEntities = parsedSchedules.map(schedule => 
+          const scheduleEntities = parsedSchedules.map(schedule =>
             this.eventScheduleRepository.create({
               ...schedule,
               event_id: id,
@@ -267,11 +254,11 @@ export class EventsRepository {
       if (speakers !== undefined) {
         // First, delete existing speakers for this event
         await this.eventSpeakerRepository.delete({ event_id: id });
-        
+
         // Then create new speakers if any
         if (speakers && speakers.length > 0) {
           const parsedSpeakers = typeof speakers === 'string' ? JSON.parse(speakers) : speakers;
-          const speakerEntities = parsedSpeakers.map(speaker => 
+          const speakerEntities = parsedSpeakers.map(speaker =>
             this.eventSpeakerRepository.create({
               ...speaker,
               event_id: id,
@@ -281,7 +268,7 @@ export class EventsRepository {
           await this.eventSpeakerRepository.save(speakerEntities);
         }
       }
-      
+
       return await this.findEventById(id);
     } catch (error) {
       console.error('Error in updateEvent:', error);
@@ -311,9 +298,9 @@ export class EventsRepository {
       });
     }
 
-    return { 
-      updated: eventsWithoutUuid.length, 
-      message: `Successfully updated ${eventsWithoutUuid.length} events with UUIDs` 
+    return {
+      updated: eventsWithoutUuid.length,
+      message: `Successfully updated ${eventsWithoutUuid.length} events with UUIDs`
     };
   }
 

@@ -8,6 +8,7 @@ import { BlogsRepository } from './blogs.repository';
 import { CreateBlogDto } from './dto/create-blog.dto';
 import { UpdateBlogDto } from './dto/update-blog.dto';
 import { Blog } from './entity/blogs.entity';
+import { PublishedBlogDto } from './dto/published-blog.dto';
 @Injectable()
 export class BlogsService {
     constructor(
@@ -28,10 +29,37 @@ export class BlogsService {
         limit?: number,
         category?: string,
         search?: string,
-    ): Promise<Blog[]> {
-        // Implement logic to fetch only published blogs
+    ): Promise<PublishedBlogDto[]> {
         const blogs = await this.blogsRepository.findAllBlogs();
-        return blogs.filter((blog) => blog.is_published);
+
+        return blogs
+            .filter((blog) => blog.is_published)
+            .map((blog) => ({
+                blog_uuid: blog.blog_uuid,
+                title: blog.title,
+                slug: blog.slug,
+                thumbnail_url: blog.thumbnail_url,
+                short_description: blog.short_description,
+                content: blog.content,
+                category: blog.category
+                    ? {
+                        id: blog.category.id,
+                        name: blog.category.name,
+                        slug: blog.category.slug,
+                    }
+                    : null, // Return category as an object or null
+                author: blog.author,
+                published_at: blog.published_at,
+                is_published: blog.is_published,
+                created_at: blog.created_at,
+                updated_at: blog.updated_at,
+                views: blog.views,
+                tags: blog.tags?.map((tag) => ({
+                    id: tag.id, // Include the id property to match BlogTag type
+                    name: tag.name,
+                    slug: tag.slug,
+                })),
+            }));
     }
     async incrementBlogViewsBySlug(slug: string): Promise<void> {
         const blog = await this.blogsRepository.findOneBySlug(slug);
@@ -85,12 +113,13 @@ export class BlogsService {
         }
         return blog;
     }
-    async getBlogBySlug(slug: string): Promise<Blog> {
+    async getBlogBySlug(slug: string): Promise<Omit<Blog, 'id'>> {
         const blog = await this.blogsRepository.findOneBySlug(slug);
         if (!blog) {
             throw new NotFoundException('Blog not found');
         }
-        return blog;
+        const { id, ...blogWithoutId } = blog; // Exclude the 'id' field
+        return blogWithoutId;
     }
     async getAllCategories(): Promise<any> {
         return await this.blogsRepository.findAllCategories();

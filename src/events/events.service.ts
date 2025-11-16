@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
+/* eslint-disable @typescript-eslint/no-unsafe-call */
 /* eslint-disable @typescript-eslint/no-unsafe-member-access */
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
 /* eslint-disable prettier/prettier */
@@ -6,13 +8,14 @@ import { EventsRepository } from './events.repository';
 import { UploadService } from '../shared/upload/upload.service';
 import { CreateEventDto } from './dto/create-event.dto';
 import { UpdateEventDto } from './dto/update-event.dto';
+import { ActiveEventDto } from './dto/active-event.dto';
 
 @Injectable()
 export class EventsService {
   constructor(
     private readonly eventsRepository: EventsRepository,
     private readonly uploadService: UploadService,
-  ) {}
+  ) { }
 
   async getAllEvents(
     sort?: string,
@@ -28,14 +31,66 @@ export class EventsService {
     limit?: number,
     category?: string,
     search?: string,
-  ): Promise<any[]> {
-    return await this.eventsRepository.findAllActiveEvents(sort, limit, category, search);
+  ): Promise<ActiveEventDto[]> {
+    const events = await this.eventsRepository.findAllActiveEvents(sort, limit, category, search);
+
+    const formattedEvents: ActiveEventDto[] = [];
+
+    for (const event of events) {
+        const category = event.category_id
+            ? await this.getCategoryById(event.category_id)
+            : undefined;
+
+        const formattedEvent: ActiveEventDto = {
+            event_uuid: event.event_uuid,
+            title: event.title,
+            slug: event.slug,
+            date: event.date.toString(),
+            time: event.time || '', // Ensure time is always a string
+            location: event.location,
+            excerpt: event.excerpt,
+            image: event.image,
+            views: event.views,
+            likes: event.likes,
+            comments: event.comments,
+            status: event.status || '', // Ensure status is always a string
+            registration_link: event.registration_link,
+            notion_content: event.notion_content,
+            is_visible: event.is_visible,
+            category: category
+                ? {
+                    name: category.name,
+                }
+                : undefined,
+            schedules: event.schedules?.map((schedule) => ({
+                event_id: schedule.event_id,
+                time: schedule.time || '', // Ensure time is always a string
+                title: schedule.title,
+                description: schedule.description,
+                date: schedule.date,
+                event: schedule.event,
+            })),
+            speakers: event.speakers?.map((speaker) => ({
+                event_id: speaker.event_id,
+                name: speaker.name,
+                role: speaker.role,
+                avatar_img: speaker.avatar_img,
+                bio: speaker.bio,
+                event: speaker.event,
+            })),
+        };
+
+        formattedEvents.push(formattedEvent);
+    }
+
+    return formattedEvents;
   }
+
 
   async getEventByUuid(event_uuid: string): Promise<any> {
     // Find the event with category relation
     const event = await this.eventsRepository.findEventByUuid(event_uuid);
-    
+
     if (!event) {
       throw new NotFoundException(`Event with UUID ${event_uuid} not found`);
     }
@@ -53,13 +108,57 @@ export class EventsService {
     };
   }
 
-  async getEventBySlug(slug: string): Promise<any> {
+  async getEventBySlug(slug: string): Promise<ActiveEventDto> {
     const event = await this.eventsRepository.findEventBySlug(slug);
     if (!event) {
-      throw new NotFoundException(`Event with slug '${slug}' not found`);
+        throw new NotFoundException(`Event with slug '${slug}' not found`);
     }
-    return event;
-  }
+
+    const category = event.category_id
+        ? await this.getCategoryById(event.category_id)
+        : undefined;
+
+    const formattedEvent: ActiveEventDto = {
+        event_uuid: event.event_uuid,
+        title: event.title,
+        slug: event.slug,
+        date: event.date.toString(),
+        time: event.time || '', // Ensure time is always a string
+        location: event.location,
+        excerpt: event.excerpt,
+        image: event.image,
+        views: event.views,
+        likes: event.likes,
+        comments: event.comments,
+        status: event.status || '', // Ensure status is always a string
+        registration_link: event.registration_link,
+        notion_content: event.notion_content,
+        is_visible: event.is_visible,
+        category: category
+            ? {
+                name: category.name,
+            }
+            : undefined,
+        schedules: event.schedules?.map((schedule) => ({
+            event_id: schedule.event_id,
+            time: schedule.time || '', // Ensure time is always a string
+            title: schedule.title,
+            description: schedule.description,
+            date: schedule.date,
+            event: schedule.event,
+        })),
+        speakers: event.speakers?.map((speaker) => ({
+            event_id: speaker.event_id,
+            name: speaker.name,
+            role: speaker.role,
+            avatar_img: speaker.avatar_img,
+            bio: speaker.bio,
+            event: speaker.event,
+        })),
+    };
+
+    return formattedEvent;
+}
 
   // Additional service methods using repository
   async getAllCategories(): Promise<any[]> {
@@ -77,7 +176,7 @@ export class EventsService {
     }
     return category;
   }
-  
+
   async incrementEventViewsByUuid(event_uuid: string): Promise<void> {
     const event = await this.eventsRepository.findEventByUuid(event_uuid);
     if (!event) {
@@ -173,11 +272,11 @@ export class EventsService {
 
       // Delete the event
       const deleteResult = await this.eventsRepository.deleteEvent(existingEvent.id);
-      
+
       if (!deleteResult) {
         throw new Error('Failed to delete event from database');
       }
-      
+
       return {
         uuid: uuid,
         id: existingEvent.id,
