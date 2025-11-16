@@ -11,7 +11,6 @@ export function parseBlogFormData(
   return {
     title: data.title,
     slug: data.slug,
-    thumbnail_url: data.thumbnail_url,
     short_description: data.short_description,
     content: data.content,
     category_id: data.category_id,

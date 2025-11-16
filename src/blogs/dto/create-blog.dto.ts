@@ -19,10 +19,6 @@ export class CreateBlogDto {
   slug: string;
 
   @IsString()
-  @IsOptional()
-  thumbnail_url?: string;
-
-  @IsString()
   @IsNotEmpty()
   short_description: string;
 

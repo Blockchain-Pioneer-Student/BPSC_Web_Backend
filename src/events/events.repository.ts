@@ -120,10 +120,13 @@ export class EventsRepository {
         order?.toUpperCase() === 'ASC' ? 'ASC' : 'DESC',
       );
     } else {
-      qb.orderBy('event.created_at', 'DESC');
+      qb.orderBy('event.created_at', 'DESC'); // Default sorting by created_at
     }
 
-    if (limit && limit > 0) qb.limit(limit);
+    // Apply limit to ensure enough events are fetched
+    if (limit && limit > 0) {
+      qb.take(limit); // Use take instead of limit for better compatibility
+    }
 
     return await qb.getMany();
   }
