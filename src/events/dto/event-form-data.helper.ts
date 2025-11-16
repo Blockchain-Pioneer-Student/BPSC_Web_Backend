@@ -9,6 +9,7 @@ export function parseEventFormData(
 ): CreateEventDto {
   return {
     title: data.title,
+    slug: data.slug,
     date: data.date,
     time: data.time,
     location: data.location,
@@ -29,6 +30,7 @@ export function parseEventUpdateFormData(
 ): UpdateEventDto {
   return {
     title: data.title,
+    slug: data.slug,
     date: data.date,
     time: data.time,
     location: data.location,
