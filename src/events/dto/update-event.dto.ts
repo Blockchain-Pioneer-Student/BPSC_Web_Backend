@@ -72,4 +72,15 @@ export class UpdateEventDto {
     size: number;
     mimetype: string;
   };
+
+  @IsOptional()
+  speaker_avatar_images?: {
+    path: string;
+    originalname: string;
+    size: number;
+    mimetype: string;
+  }[];
+
+  @IsOptional()
+  speaker_avatar_mapping?: number[]; // Maps file index to speaker index
 }

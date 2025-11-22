@@ -234,41 +234,81 @@ export class EventsRepository {
         await this.eventRepository.update(id, basicFields);
       }
 
-      // Handle schedules update
+      // Handle schedules update with upsert logic
       if (schedules !== undefined) {
-        // First, delete existing schedules for this event
-        await this.eventScheduleRepository.delete({ event_id: id });
+        const parsedSchedules = typeof schedules === 'string' ? JSON.parse(schedules) : schedules;
 
-        // Then create new schedules if any
-        if (schedules && schedules.length > 0) {
-          const parsedSchedules = typeof schedules === 'string' ? JSON.parse(schedules) : schedules;
-          const scheduleEntities = parsedSchedules.map(schedule =>
-            this.eventScheduleRepository.create({
-              ...schedule,
+        // Get existing schedules
+        const existingSchedules = await this.eventScheduleRepository.find({
+          where: { event_id: id }
+        });
+        const existingIds = existingSchedules.map(s => s.id);
+
+        // Get incoming schedule IDs (only those that have id)
+        const incomingIds = parsedSchedules
+          .map((s: any) => s.id)
+          .filter((id: any) => id !== undefined && id !== null);
+
+        // Delete schedules that are no longer in the input
+        const toDeleteIds = existingIds.filter(eid => !incomingIds.includes(eid));
+        if (toDeleteIds.length > 0) {
+          await this.eventScheduleRepository.delete(toDeleteIds);
+        }
+
+        // Update existing or create new schedules
+        for (const sched of parsedSchedules) {
+          if (sched.id) {
+            // Update existing schedule
+            const { id: schedId, ...schedData } = sched;
+            await this.eventScheduleRepository.update(schedId, schedData);
+          } else {
+            // Create new schedule
+            const newSched = this.eventScheduleRepository.create({
+              ...sched,
               event_id: id,
               event: { id } as Event,
-            })
-          );
-          await this.eventScheduleRepository.save(scheduleEntities);
+            });
+            await this.eventScheduleRepository.save(newSched);
+          }
         }
       }
 
-      // Handle speakers update
+      // Handle speakers update with upsert logic
       if (speakers !== undefined) {
-        // First, delete existing speakers for this event
-        await this.eventSpeakerRepository.delete({ event_id: id });
+        const parsedSpeakers = typeof speakers === 'string' ? JSON.parse(speakers) : speakers;
 
-        // Then create new speakers if any
-        if (speakers && speakers.length > 0) {
-          const parsedSpeakers = typeof speakers === 'string' ? JSON.parse(speakers) : speakers;
-          const speakerEntities = parsedSpeakers.map(speaker =>
-            this.eventSpeakerRepository.create({
+        // Get existing speakers
+        const existingSpeakers = await this.eventSpeakerRepository.find({
+          where: { event_id: id }
+        });
+        const existingIds = existingSpeakers.map(s => s.id);
+
+        // Get incoming speaker IDs (only those that have id)
+        const incomingIds = parsedSpeakers
+          .map((s: any) => s.id)
+          .filter((id: any) => id !== undefined && id !== null);
+
+        // Delete speakers that are no longer in the input
+        const toDeleteIds = existingIds.filter(eid => !incomingIds.includes(eid));
+        if (toDeleteIds.length > 0) {
+          await this.eventSpeakerRepository.delete(toDeleteIds);
+        }
+
+        // Update existing or create new speakers
+        for (const speaker of parsedSpeakers) {
+          if (speaker.id) {
+            // Update existing speaker
+            const { id: speakerId, ...speakerData } = speaker;
+            await this.eventSpeakerRepository.update(speakerId, speakerData);
+          } else {
+            // Create new speaker
+            const newSpeaker = this.eventSpeakerRepository.create({
               ...speaker,
               event_id: id,
               event: { id } as Event,
-            })
-          );
-          await this.eventSpeakerRepository.save(speakerEntities);
+            });
+            await this.eventSpeakerRepository.save(newSpeaker);
+          }
         }
       }
 

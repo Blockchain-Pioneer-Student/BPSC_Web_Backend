@@ -37,50 +37,50 @@ export class EventsService {
     const formattedEvents: ActiveEventDto[] = [];
 
     for (const event of events) {
-        const category = event.category_id
-            ? await this.getCategoryById(event.category_id)
-            : undefined;
+      const category = event.category_id
+        ? await this.getCategoryById(event.category_id)
+        : undefined;
 
-        const formattedEvent: ActiveEventDto = {
-            event_uuid: event.event_uuid,
-            title: event.title,
-            slug: event.slug,
-            date: event.date.toString(),
-            time: event.time || '', // Ensure time is always a string
-            location: event.location,
-            excerpt: event.excerpt,
-            image: event.image,
-            views: event.views,
-            likes: event.likes,
-            comments: event.comments,
-            status: event.status || '', // Ensure status is always a string
-            registration_link: event.registration_link,
-            notion_content: event.notion_content,
-            is_visible: event.is_visible,
-            category: category
-                ? {
-                    name: category.name,
-                }
-                : undefined,
-            schedules: event.schedules?.map((schedule) => ({
-                event_id: schedule.event_id,
-                time: schedule.time || '', // Ensure time is always a string
-                title: schedule.title,
-                description: schedule.description,
-                date: schedule.date,
-                event: schedule.event,
-            })),
-            speakers: event.speakers?.map((speaker) => ({
-                event_id: speaker.event_id,
-                name: speaker.name,
-                role: speaker.role,
-                avatar_img: speaker.avatar_img,
-                bio: speaker.bio,
-                event: speaker.event,
-            })),
-        };
+      const formattedEvent: ActiveEventDto = {
+        event_uuid: event.event_uuid,
+        title: event.title,
+        slug: event.slug,
+        date: event.date.toString(),
+        time: event.time || '', // Ensure time is always a string
+        location: event.location,
+        excerpt: event.excerpt,
+        image: event.image,
+        views: event.views,
+        likes: event.likes,
+        comments: event.comments,
+        status: event.status || '', // Ensure status is always a string
+        registration_link: event.registration_link,
+        notion_content: event.notion_content,
+        is_visible: event.is_visible,
+        category: category
+          ? {
+            name: category.name,
+          }
+          : undefined,
+        schedules: event.schedules?.map((schedule) => ({
+          event_id: schedule.event_id,
+          time: schedule.time || '', // Ensure time is always a string
+          title: schedule.title,
+          description: schedule.description,
+          date: schedule.date,
+          event: schedule.event,
+        })),
+        speakers: event.speakers?.map((speaker) => ({
+          event_id: speaker.event_id,
+          name: speaker.name,
+          role: speaker.role,
+          avatar_img: speaker.avatar_img,
+          bio: speaker.bio,
+          event: speaker.event,
+        })),
+      };
 
-        formattedEvents.push(formattedEvent);
+      formattedEvents.push(formattedEvent);
     }
 
     return formattedEvents;
@@ -111,54 +111,54 @@ export class EventsService {
   async getEventBySlug(slug: string): Promise<ActiveEventDto> {
     const event = await this.eventsRepository.findEventBySlug(slug);
     if (!event) {
-        throw new NotFoundException(`Event with slug '${slug}' not found`);
+      throw new NotFoundException(`Event with slug '${slug}' not found`);
     }
 
     const category = event.category_id
-        ? await this.getCategoryById(event.category_id)
-        : undefined;
+      ? await this.getCategoryById(event.category_id)
+      : undefined;
 
     const formattedEvent: ActiveEventDto = {
-        event_uuid: event.event_uuid,
-        title: event.title,
-        slug: event.slug,
-        date: event.date.toString(),
-        time: event.time || '', // Ensure time is always a string
-        location: event.location,
-        excerpt: event.excerpt,
-        image: event.image,
-        views: event.views,
-        likes: event.likes,
-        comments: event.comments,
-        status: event.status || '', // Ensure status is always a string
-        registration_link: event.registration_link,
-        notion_content: event.notion_content,
-        is_visible: event.is_visible,
-        category: category
-            ? {
-                name: category.name,
-            }
-            : undefined,
-        schedules: event.schedules?.map((schedule) => ({
-            event_id: schedule.event_id,
-            time: schedule.time || '', // Ensure time is always a string
-            title: schedule.title,
-            description: schedule.description,
-            date: schedule.date,
-            event: schedule.event,
-        })),
-        speakers: event.speakers?.map((speaker) => ({
-            event_id: speaker.event_id,
-            name: speaker.name,
-            role: speaker.role,
-            avatar_img: speaker.avatar_img,
-            bio: speaker.bio,
-            event: speaker.event,
-        })),
+      event_uuid: event.event_uuid,
+      title: event.title,
+      slug: event.slug,
+      date: event.date.toString(),
+      time: event.time || '', // Ensure time is always a string
+      location: event.location,
+      excerpt: event.excerpt,
+      image: event.image,
+      views: event.views,
+      likes: event.likes,
+      comments: event.comments,
+      status: event.status || '', // Ensure status is always a string
+      registration_link: event.registration_link,
+      notion_content: event.notion_content,
+      is_visible: event.is_visible,
+      category: category
+        ? {
+          name: category.name,
+        }
+        : undefined,
+      schedules: event.schedules?.map((schedule) => ({
+        event_id: schedule.event_id,
+        time: schedule.time || '', // Ensure time is always a string
+        title: schedule.title,
+        description: schedule.description,
+        date: schedule.date,
+        event: schedule.event,
+      })),
+      speakers: event.speakers?.map((speaker) => ({
+        event_id: speaker.event_id,
+        name: speaker.name,
+        role: speaker.role,
+        avatar_img: speaker.avatar_img,
+        bio: speaker.bio,
+        event: speaker.event,
+      })),
     };
 
     return formattedEvent;
-}
+  }
 
   // Additional service methods using repository
   async getAllCategories(): Promise<any[]> {
@@ -209,9 +209,54 @@ export class EventsService {
         imageUrl = uploadResult.url;
       }
 
+      // Handle speaker avatar images upload
+      let speakers = createEventDto.speakers || [];
+      if (createEventDto.speaker_avatar_images && createEventDto.speaker_avatar_images.length > 0) {
+        // Upload all speaker avatar images
+        const speakerAvatarFiles = createEventDto.speaker_avatar_images.map(file => ({
+          path: file.path,
+          originalName: file.originalname,
+          size: file.size,
+          mimeType: file.mimetype,
+        }));
+
+        const uploadedAvatars = await this.uploadService.uploadMultipleFiles(speakerAvatarFiles);
+
+        // Use mapping if provided, otherwise assign by index
+        if (createEventDto.speaker_avatar_mapping && createEventDto.speaker_avatar_mapping.length > 0) {
+          // Assign uploaded avatar URLs to speakers using the mapping
+          // Mapping can contain either speaker IDs (for updates) or indices (for creates)
+          speakers = speakers.map((speaker: any, speakerIndex: number) => {
+            // Try to find file index by matching speaker ID or index
+            const speakerIdentifier = speaker.id ?? speakerIndex;
+            const fileIndex = createEventDto.speaker_avatar_mapping!.indexOf(speakerIdentifier);
+
+            if (fileIndex !== -1 && uploadedAvatars[fileIndex]) {
+              return {
+                ...speaker,
+                avatar_img: uploadedAvatars[fileIndex].url,
+              };
+            }
+            return speaker;
+          });
+        } else {
+          // Fallback: Assign by index (old behavior)
+          speakers = speakers.map((speaker: any, index: number) => {
+            if (uploadedAvatars[index]) {
+              return {
+                ...speaker,
+                avatar_img: uploadedAvatars[index].url,
+              };
+            }
+            return speaker;
+          });
+        }
+      }
+
       const newEvent = {
         ...createEventDto,
         image: imageUrl, // Use the uploaded image URL in a new property
+        speakers, // Use updated speakers with avatar URLs
       };
 
       // Save the event to the repository
@@ -241,9 +286,63 @@ export class EventsService {
         (updateEventDto as any).image = uploadedImage.url;
       }
 
+      // Handle speaker avatar images upload
+      let speakers = updateEventDto.speakers;
+      if (updateEventDto.speaker_avatar_images && updateEventDto.speaker_avatar_images.length > 0) {
+        // If speakers aren't provided in the update payload, load existing speakers from DB
+        if (!speakers) {
+          speakers = await this.eventsRepository.findEventSpeakersByEventId(existingEvent.id);
+        }
+
+        if (speakers && speakers.length > 0) {
+          // Upload all speaker avatar images
+          const speakerAvatarFiles = updateEventDto.speaker_avatar_images.map(file => ({
+            path: file.path,
+            originalName: file.originalname,
+            size: file.size,
+            mimeType: file.mimetype,
+          }));
+
+          const uploadedAvatars = await this.uploadService.uploadMultipleFiles(speakerAvatarFiles);
+
+          // Use mapping if provided, otherwise assign by index
+          if (updateEventDto.speaker_avatar_mapping && updateEventDto.speaker_avatar_mapping.length > 0) {
+            // Assign uploaded avatar URLs to speakers using the mapping
+            // Mapping can contain either speaker IDs (for updates) or indices (for creates)
+            speakers = speakers.map((speaker: any, speakerIndex: number) => {
+              // Try to find file index by matching speaker ID or index
+              const speakerIdentifier = speaker.id ?? speakerIndex;
+              const fileIndex = updateEventDto.speaker_avatar_mapping!.indexOf(speakerIdentifier);
+
+              if (fileIndex !== -1 && uploadedAvatars[fileIndex]) {
+                return {
+                  ...speaker,
+                  avatar_img: uploadedAvatars[fileIndex].url,
+                };
+              }
+              return speaker;
+            });
+          } else {
+            // Fallback: Assign by index (old behavior)
+            speakers = speakers.map((speaker: any, index: number) => {
+              if (uploadedAvatars[index]) {
+                return {
+                  ...speaker,
+                  avatar_img: uploadedAvatars[index].url,
+                };
+              }
+              return speaker;
+            });
+          }
+        }
+      }
+
       const updatedEvent = {
         ...updateEventDto,
         image_file: undefined, // Remove file from update data
+        speaker_avatar_images: undefined, // Remove files from update data
+        speaker_avatar_mapping: undefined, // Remove mapping from update data
+        speakers, // Use updated speakers with avatar URLs
       };
 
       return await this.eventsRepository.updateEvent(existingEvent.id, updatedEvent);

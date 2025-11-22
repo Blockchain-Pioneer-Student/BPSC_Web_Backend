@@ -10,7 +10,7 @@ import {
   Patch,
   Delete,
   Body,
-  UploadedFile,
+  UploadedFiles,
   UseInterceptors,
   UseGuards,
 } from '@nestjs/common';
@@ -21,7 +21,7 @@ import {
   parseEventFormData,
   parseEventUpdateFormData,
 } from './dto/event-form-data.helper';
-import { FileInterceptor } from '@nestjs/platform-express';
+import {  FileFieldsInterceptor } from '@nestjs/platform-express';
 import { singleFileOptions } from 'src/core/middleware/multer.middleware';
 import { JwtAuthGuard } from '../core/auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../core/auth/guards/roles.guard';
@@ -31,7 +31,7 @@ import { ActiveEventDto } from './dto/active-event.dto';
 @Controller('events')
 @UseGuards(JwtAuthGuard, RolesGuard)
 export class EventsController {
-  constructor(private readonly eventsService: EventsService) {}
+  constructor(private readonly eventsService: EventsService) { }
 
   @Get('get-all')
   @Roles('admin')
@@ -102,40 +102,76 @@ export class EventsController {
 
   @Post('create')
   @Roles('admin')
-  @UseInterceptors(FileInterceptor('image_file', singleFileOptions))
+  @UseInterceptors(
+    FileFieldsInterceptor(
+      [
+        { name: 'image_file', maxCount: 1 },
+        { name: 'speaker_avatar_images', maxCount: 10 },
+      ],
+      singleFileOptions,
+    ),
+  )
   async createEvent(
     @Body() body: any,
-    @UploadedFile()
-    image_file?: {
-      path: string;
-      originalname: string;
-      size: number;
-      mimetype: string;
+    @UploadedFiles()
+    files?: {
+      image_file?: {
+        path: string;
+        originalname: string;
+        size: number;
+        mimetype: string;
+      }[];
+      speaker_avatar_images?: {
+        path: string;
+        originalname: string;
+        size: number;
+        mimetype: string;
+      }[];
     },
   ): Promise<any> {
-    const createEventDto = parseEventFormData(body, image_file);
+    const image_file = files?.image_file?.[0];
+    const speaker_avatar_images = files?.speaker_avatar_images;
+    const createEventDto = parseEventFormData(body, image_file, speaker_avatar_images);
     return await this.eventsService.createEvent(createEventDto);
   }
 
   @Patch('update/:uuid')
   @Roles('admin')
-  @UseInterceptors(FileInterceptor('image_file', singleFileOptions))
+  @UseInterceptors(
+    FileFieldsInterceptor(
+      [
+        { name: 'image_file', maxCount: 1 },
+        { name: 'speaker_avatar_images', maxCount: 10 },
+      ],
+      singleFileOptions,
+    ),
+  )
   async updateEvent(
     @Param('uuid') uuid: string,
     @Body() body: any,
-    @UploadedFile()
-    image_file?: {
-      path: string;
-      originalname: string;
-      size: number;
-      mimetype: string;
+    @UploadedFiles()
+    files?: {
+      image_file?: {
+        path: string;
+        originalname: string;
+        size: number;
+        mimetype: string;
+      }[];
+      speaker_avatar_images?: {
+        path: string;
+        originalname: string;
+        size: number;
+        mimetype: string;
+      }[];
     },
   ): Promise<any> {
     try {
-      const updateEventDto = parseEventUpdateFormData(body, image_file);
-      
+      const image_file = files?.image_file?.[0];
+      const speaker_avatar_images = files?.speaker_avatar_images;
+      const updateEventDto = parseEventUpdateFormData(body, image_file, speaker_avatar_images);
+
       console.log('Updating event by UUID:', uuid, 'with data:', updateEventDto);
-      
+
       const result = await this.eventsService.updateEventByUuid(
         uuid,
         updateEventDto,
@@ -151,13 +187,13 @@ export class EventsController {
     }
   }
 
-  
+
   @Delete('uuid/:uuid')
   @Roles('admin')
   async deleteEventByUuid(@Param('uuid') uuid: string): Promise<any> {
     try {
       console.log('Deleting event by UUID:', uuid);
-      
+
       const result = await this.eventsService.deleteEventByUuid(uuid);
       return {
         success: true,
