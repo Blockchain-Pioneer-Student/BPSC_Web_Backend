@@ -168,4 +168,8 @@ export class BlogsService {
                 })),
             }));
     }
+
+    async getAllTags(): Promise<any> {
+        return await this.blogsRepository.findAllTags();
+    }
 }

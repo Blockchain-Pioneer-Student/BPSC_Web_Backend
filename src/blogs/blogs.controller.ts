@@ -145,4 +145,10 @@ export class BlogsController {
     const tagNames = tags ? tags.split(',').map(t => t.trim()) : [];
     return await this.blogsService.getBlogsByTags(tagNames);
   }
+
+  @Public()
+  @Get('tags')
+  async getAllTags(): Promise<any> {
+    return await this.blogsService.getAllTags();
+  }
 }
