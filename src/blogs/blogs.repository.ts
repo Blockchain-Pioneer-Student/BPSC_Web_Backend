@@ -24,7 +24,7 @@ export class BlogsRepository {
 
     @InjectRepository(BlogTag)
     private readonly blogTagRepository: Repository<BlogTag>,
-  ) {}
+  ) { }
 
   async findAllBlogs(): Promise<Blog[]> {
     return this.blogRepository.find({
@@ -59,8 +59,8 @@ export class BlogsRepository {
     const tags = Array.isArray(dto.tags)
       ? dto.tags
       : typeof dto.tags === 'string'
-      ? JSON.parse(dto.tags)
-      : [];
+        ? JSON.parse(dto.tags)
+        : [];
 
     // Extract tags & thumbnail khỏi DTO nếu không muốn gán trực tiếp
     const { tags: _, thumbnail_image: __, ...blogData } = dto;
@@ -109,5 +109,61 @@ export class BlogsRepository {
 
   async findCategoryById(id: number): Promise<any> {
     return await this.blogCategoryRepository.findOne({ where: { id } });
+  }
+
+  async findBlogsByTags(tagNames: string[]): Promise<Blog[]> {
+    return this.blogRepository
+      .createQueryBuilder('blog')
+      .leftJoinAndSelect('blog.category', 'category')
+      .leftJoinAndSelect('blog.tags', 'tags')
+      .where('tags.name IN (:...tagNames)', { tagNames })
+      .getMany();
+  }
+
+  async updateBlog(uuid: string, dto: any): Promise<Blog> {
+    // Parse tags if they are a string
+    const tags = Array.isArray(dto.tags)
+      ? dto.tags
+      : typeof dto.tags === 'string'
+        ? JSON.parse(dto.tags)
+        : [];
+
+    // Find the blog by UUID
+    const blog = await this.blogRepository.findOne({
+      where: { blog_uuid: uuid },
+      relations: ['tags'],
+    });
+
+    if (!blog) {
+      throw new Error('Blog not found');
+    }
+
+    // Update blog fields
+    Object.assign(blog, dto);
+
+    // Handle tags
+    const tagEntities = await Promise.all(
+      tags.map(async (tag) => {
+        let tagEntity = await this.blogTagRepository.findOne({
+          where: { name: tag.name },
+        });
+
+        if (!tagEntity) {
+          tagEntity = this.blogTagRepository.create({
+            name: tag.name,
+            slug: tag.slug || tag.name.replace(/\s+/g, '-').toLowerCase(),
+          });
+          await this.blogTagRepository.save(tagEntity);
+        }
+
+        return tagEntity;
+      }),
+    );
+
+    // Assign tags to the blog
+    blog.tags = tagEntities;
+
+    // Save the updated blog
+    return await this.blogRepository.save(blog);
   }
 }

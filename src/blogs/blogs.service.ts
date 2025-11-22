@@ -92,12 +92,7 @@ export class BlogsService {
         }
     }
     async updateBlogByUuid(uuid: string, updateBlogDto: UpdateBlogDto): Promise<Blog> {
-        const blog = await this.blogsRepository.findOneByUuid(uuid);
-        if (!blog) {
-            throw new NotFoundException('Blog not found');
-        }
-        Object.assign(blog, updateBlogDto);
-        return await this.blogsRepository.save(blog);
+        return await this.blogsRepository.updateBlog(uuid, updateBlogDto);
     }
     async deleteBlogByUuid(uuid: string): Promise<void> {
         const blog = await this.blogsRepository.findOneByUuid(uuid);
@@ -131,5 +126,46 @@ export class BlogsService {
             throw new NotFoundException('Category not found');
         }
         return category;
+    }
+
+    async getTagsByBlogUuid(uuid: string): Promise<any> {
+        const blog = await this.blogsRepository.findOneByUuid(uuid);
+        if (!blog) {
+            throw new NotFoundException('Blog not found');
+        }
+        return blog.tags || [];
+    }
+
+    async getBlogsByTags(tagNames: string[]): Promise<PublishedBlogDto[]> {
+        const blogs = await this.blogsRepository.findBlogsByTags(tagNames);
+
+        return blogs
+            .filter((blog) => blog.is_published)
+            .map((blog) => ({
+                blog_uuid: blog.blog_uuid,
+                title: blog.title,
+                slug: blog.slug,
+                thumbnail_url: blog.thumbnail_url,
+                short_description: blog.short_description,
+                content: blog.content,
+                category: blog.category
+                    ? {
+                        id: blog.category.id,
+                        name: blog.category.name,
+                        slug: blog.category.slug,
+                    }
+                    : null,
+                author: blog.author,
+                published_at: blog.published_at,
+                is_published: blog.is_published,
+                created_at: blog.created_at,
+                updated_at: blog.updated_at,
+                views: blog.views,
+                tags: blog.tags?.map((tag) => ({
+                    id: tag.id,
+                    name: tag.name,
+                    slug: tag.slug,
+                })),
+            }));
     }
 }

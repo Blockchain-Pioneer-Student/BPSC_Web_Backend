@@ -29,7 +29,7 @@ import { PublishedBlogDto } from './dto/published-blog.dto';
 @Controller('blogs')
 @UseGuards(JwtAuthGuard, RolesGuard)
 export class BlogsController {
-  constructor(private readonly blogsService: BlogsService) {}
+  constructor(private readonly blogsService: BlogsService) { }
 
   @Get('get-all')
   @Roles('admin')
@@ -131,5 +131,18 @@ export class BlogsController {
   async getCategoryById(@Param('id') id: string): Promise<any> {
     const categoryId = parseInt(id, 10);
     return await this.blogsService.getCategoryById(categoryId);
+  }
+
+  @Get('uuid/:uuid/tags')
+  @Roles('admin')
+  async getTagsByBlogUuid(@Param('uuid') uuid: string): Promise<any> {
+    return await this.blogsService.getTagsByBlogUuid(uuid);
+  }
+
+  @Public()
+  @Get('by-tags')
+  async getBlogsByTags(@Query('tags') tags: string): Promise<any> {
+    const tagNames = tags ? tags.split(',').map(t => t.trim()) : [];
+    return await this.blogsService.getBlogsByTags(tagNames);
   }
 }
