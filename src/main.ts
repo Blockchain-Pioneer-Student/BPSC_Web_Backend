@@ -18,8 +18,8 @@ async function bootstrap() {
   const allowedOrigins = configService
     .get<string>('ALLOWED_ORIGINS')
     ?.split(',') || [
-    'http://localhost:3000',
-    'http://localhost:3001',
+    'http://localhost:8080',
+    'http://localhost:8081',
     'https://bpsclub-admin-dashboard.vercel.app',
     'https://web-clb-blockchain-utc.vercel.app',
   ];
