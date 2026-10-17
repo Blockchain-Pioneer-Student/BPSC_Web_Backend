@@ -48,6 +48,9 @@ export class Partner {
   @Column({ type: 'text', nullable: true })
   address?: string;
 
+  @Column({ type: 'integer', default: 0 })
+  display_order: number;
+
   @Column({
     type: 'enum',
     enum: PartnerStatus,

@@ -5,8 +5,18 @@ import {
   CreateDateColumn,
   UpdateDateColumn,
   OneToMany,
+  ManyToOne,
+  JoinColumn,
 } from 'typeorm';
 import { RegistrationBlockchainArea } from './registration_blockchain_areas.entity';
+import { RecruitmentCampaign } from '../../recruitment-campaigns/entity/recruitment-campaign.entity';
+
+export enum RegistrationStatus {
+  PENDING = 'pending',
+  APPROVED = 'approved',
+  REJECTED = 'rejected',
+  NEEDS_INFO = 'needs_info',
+}
 
 @Entity('registrations')
 export class Registration {
@@ -43,9 +53,21 @@ export class Registration {
   @Column({ type: 'text', nullable: false })
   reason: string;
 
+  @Column({ type: 'varchar', length: 30, default: RegistrationStatus.PENDING })
+  status: RegistrationStatus;
+
+  @Column({ type: 'integer', nullable: true })
+  campaign_id?: number;
+
   @CreateDateColumn({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
   created_at: Date;
 
+  @ManyToOne(() => RecruitmentCampaign, (campaign) => campaign.registrations, {
+    nullable: true,
+    onDelete: 'RESTRICT',
+  })
+  @JoinColumn({ name: 'campaign_id' })
+  campaign?: RecruitmentCampaign;
 
   // Relations
   @OneToMany(

@@ -5,6 +5,7 @@ import { AppModule } from './app.module';
 import { ValidationPipe } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import cookieParser from 'cookie-parser';
+import type { NextFunction, Request, Response } from 'express';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -14,15 +15,58 @@ async function bootstrap() {
   // Enable cookie parser for HTTP-only cookies
   app.use(cookieParser());
 
+  const isProduction =
+    configService.get<string>('NODE_ENV') === 'production';
+
   // Enable CORS for frontend with environment-based origins
   const allowedOrigins = configService
     .get<string>('ALLOWED_ORIGINS')
-    ?.split(',') || [
+    ?.split(',')
+    .map((origin) => origin.trim())
+    .filter(Boolean) || [
     'http://localhost:8080',
     'http://localhost:8081',
     'https://bpsclub-admin-dashboard.vercel.app',
     'https://web-clb-blockchain-utc.vercel.app',
   ];
+
+  // CSRF-style browser origin check for cookie-authenticated mutations.
+  // Browser mutations must come from an allowed origin. Bearer/server-to-server
+  // requests without auth cookies remain available without Origin/Referer.
+  app.use(
+    (req: Request, res: Response, next: NextFunction) => {
+      const safeMethods = new Set(['GET', 'HEAD', 'OPTIONS']);
+      if (safeMethods.has(req.method.toUpperCase())) {
+        return next();
+      }
+
+      const origin = req.headers.origin;
+      const referer = req.headers.referer;
+      let browserOrigin = origin;
+
+      if (!browserOrigin && referer) {
+        try {
+          browserOrigin = new URL(referer).origin;
+        } catch {
+          return res.status(403).json({ message: 'Invalid request origin' });
+        }
+      }
+
+      const hasAuthCookie = Boolean(
+        req.cookies?.access_token || req.cookies?.refresh_token,
+      );
+
+      if (!browserOrigin && isProduction && hasAuthCookie) {
+        return res.status(403).json({ message: 'Request origin is required' });
+      }
+
+      if (browserOrigin && !allowedOrigins.includes(browserOrigin)) {
+        return res.status(403).json({ message: 'Request origin is not allowed' });
+      }
+
+      return next();
+    },
+  );
 
   app.enableCors({
     origin: allowedOrigins,
@@ -52,9 +96,7 @@ async function bootstrap() {
   );
 
   const port = configService.get<number>('PORT') || 10000; // Use PORT from environment or default to 10000
-  const host = configService.get<string>('NODE_ENV') === 'production'
-    ? '0.0.0.0'
-    : 'localhost';
+  const host = isProduction ? '0.0.0.0' : 'localhost';
 
   await app.listen(port, host);
 

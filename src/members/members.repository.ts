@@ -64,10 +64,14 @@ export class MembersRepository {
       } else if (field === 'created') {
         queryBuilder.orderBy('member.id', order);
       } else {
-        queryBuilder.orderBy('member.display_order', 'ASC');
+        queryBuilder
+          .orderBy('board.display_order', 'ASC')
+          .addOrderBy('member.display_order', 'ASC');
       }
     } else {
-      queryBuilder.orderBy('member.display_order', 'ASC');
+      queryBuilder
+        .orderBy('board.display_order', 'ASC')
+        .addOrderBy('member.display_order', 'ASC');
     }
 
     // Apply limit
@@ -133,7 +137,10 @@ export class MembersRepository {
       .leftJoinAndSelect('member.board', 'board')
       .leftJoinAndSelect('member.role', 'role')
       .leftJoinAndSelect('member.socials', 'socials')
-      .where('member.is_active = :isActive', { isActive: true });
+      .where('member.is_active = :isActive', { isActive: true })
+      .andWhere('(board.id IS NULL OR board.is_visible = :boardVisible)', {
+        boardVisible: true,
+      });
 
     // Apply search filter
     if (search) {
@@ -153,10 +160,16 @@ export class MembersRepository {
       } else if (field === 'order') {
         queryBuilder.orderBy('member.display_order', order);
       } else {
-        queryBuilder.orderBy('member.display_order', 'ASC');
+        queryBuilder
+          .orderBy('board.display_order', 'ASC', 'NULLS LAST')
+          .addOrderBy('member.display_order', 'ASC')
+          .addOrderBy('member.id', 'ASC');
       }
     } else {
-      queryBuilder.orderBy('member.display_order', 'ASC');
+      queryBuilder
+        .orderBy('board.display_order', 'ASC', 'NULLS LAST')
+        .addOrderBy('member.display_order', 'ASC')
+          .addOrderBy('member.id', 'ASC');
     }
 
     // Apply limit

@@ -1,4 +1,4 @@
-import { IsString, IsOptional, IsNotEmpty, MaxLength } from 'class-validator';
+import { IsString, IsOptional, IsNotEmpty, MaxLength, IsInt, Min, IsBoolean } from 'class-validator';
 
 export class CreateBoardDto {
   @IsNotEmpty()
@@ -9,4 +9,13 @@ export class CreateBoardDto {
   @IsOptional()
   @IsString()
   description?: string;
+
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  display_order?: number;
+
+  @IsOptional()
+  @IsBoolean()
+  is_visible?: boolean;
 }

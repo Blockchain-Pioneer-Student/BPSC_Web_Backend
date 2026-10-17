@@ -25,7 +25,7 @@ export class Member {
   bio: string;
 
   @Column({ type: 'integer', nullable: true })
-  board_id: number;
+  board_id: number | null;
 
   @Column({ type: 'integer', nullable: true })
   role_id: number;
@@ -39,7 +39,7 @@ export class Member {
   // Relationships
   @ManyToOne(() => Board, (board) => board.members)
   @JoinColumn({ name: 'board_id' })
-  board: Board;
+  board: Board | null;
 
   @ManyToOne(() => MemberRole, (role) => role.members)
   @JoinColumn({ name: 'role_id' })

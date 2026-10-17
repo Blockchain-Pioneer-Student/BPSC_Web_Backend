@@ -10,14 +10,20 @@ import {
   UploadedFiles,
   BadRequestException,
   HttpStatus,
-  HttpCode
+  HttpCode,
+  UseGuards
 } from '@nestjs/common';
 import { FileInterceptor, FilesInterceptor } from '@nestjs/platform-express';
 import { extname } from 'path';
 import { UploadService } from './upload.service';
 import { singleFileOptions, multipleFilesOptions } from '../../core/middleware/multer.middleware';
+import { JwtAuthGuard } from '../../core/auth/guards/jwt-auth.guard';
+import { RolesGuard } from '../../core/auth/guards/roles.guard';
+import { Roles } from '../../core/auth/decorators/roles.decorator';
 
 @Controller('upload')
+@UseGuards(JwtAuthGuard, RolesGuard)
+@Roles('admin')
 export class UploadController {
   constructor(private readonly uploadService: UploadService) {}
 

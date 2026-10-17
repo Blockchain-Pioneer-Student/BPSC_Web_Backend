@@ -1,84 +1,191 @@
-/* eslint-disable @typescript-eslint/no-unsafe-argument */
-/* eslint-disable @typescript-eslint/no-unsafe-call */
 /* eslint-disable prettier/prettier */
-/* eslint-disable @typescript-eslint/no-unsafe-member-access */
-/* eslint-disable @typescript-eslint/no-unsafe-assignment */
-import { Injectable, BadRequestException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, In } from 'typeorm';
-import { Registration } from './entity/registrations.entity';
+import { DataSource, In, Repository } from 'typeorm';
+import { Registration, RegistrationStatus } from './entity/registrations.entity';
 import { RegistrationBlockchainArea } from './entity/registration_blockchain_areas.entity';
 import { CreateRegistrationDto } from './dto/create-registration.dto';
 import { BlockchainArea } from '../blockchain_areas/entity/blockchain_areas.entity';
+import {
+  RecruitmentCampaign,
+  RecruitmentCampaignStatus,
+} from '../recruitment-campaigns/entity/recruitment-campaign.entity';
 
 @Injectable()
 export class RegistrationsService {
   constructor(
     @InjectRepository(Registration)
     private registrationRepository: Repository<Registration>,
-    @InjectRepository(RegistrationBlockchainArea)
-    private registrationBlockchainAreaRepository: Repository<RegistrationBlockchainArea>,
-    @InjectRepository(BlockchainArea)
-    private blockchainAreaRepository: Repository<BlockchainArea>,
+    private readonly dataSource: DataSource,
   ) {}
 
   async createRegistration(
-    createRegistrationDto: CreateRegistrationDto,
+    dto: CreateRegistrationDto,
   ): Promise<Registration> {
-    const { blockchain_area_ids, ...registrationData } = createRegistrationDto;
+    const {
+      blockchain_area_ids,
+      campaign_id: requestedCampaignId,
+      ...registrationData
+    } = dto;
 
-    // Create registration
-    const registration = this.registrationRepository.create(registrationData);
-    const savedRegistration = await this.registrationRepository.save(
-      registration,
-    );
+    return this.dataSource.transaction(async (manager) => {
+      const campaignRepository = manager.getRepository(RecruitmentCampaign);
+      const areaRepository = manager.getRepository(BlockchainArea);
+      const registrationRepository = manager.getRepository(Registration);
+      const registrationAreaRepository =
+        manager.getRepository(RegistrationBlockchainArea);
 
-    // If blockchain areas are provided, create the associations
-    if (blockchain_area_ids && blockchain_area_ids.length > 0) {
-      // Validate that all area IDs exist
-      const areas = await this.blockchainAreaRepository.findBy({
-        id: In(blockchain_area_ids),
+      const campaign = requestedCampaignId
+        ? await campaignRepository
+            .createQueryBuilder('campaign')
+            .setLock('pessimistic_write')
+            .where('campaign.id = :id', { id: requestedCampaignId })
+            .getOne()
+        : await this.findActiveCampaign(campaignRepository);
+
+      if (!campaign) {
+        throw new BadRequestException(
+          requestedCampaignId
+            ? 'Recruitment campaign not found'
+            : 'Recruitment is currently closed',
+        );
+      }
+
+      this.assertCampaignAcceptsInternalRegistration(campaign);
+
+      const uniqueAreaIds = [...new Set(blockchain_area_ids)];
+      if (uniqueAreaIds.length !== blockchain_area_ids.length) {
+        throw new BadRequestException(
+          'blockchain_area_ids must not contain duplicates',
+        );
+      }
+
+      const areas = await areaRepository.findBy({
+        id: In(uniqueAreaIds),
       });
-      if (areas.length !== blockchain_area_ids.length) {
+
+      if (areas.length !== uniqueAreaIds.length) {
         throw new BadRequestException(
           'One or more blockchain area IDs are invalid',
         );
       }
 
-      // Create registration-blockchain area associations
-      const registrationAreas = blockchain_area_ids.map((areaId) =>
-        this.registrationBlockchainAreaRepository.create({
+      const registration = registrationRepository.create({
+        ...registrationData,
+        campaign_id: campaign.id,
+      });
+      const savedRegistration =
+        await registrationRepository.save(registration);
+
+      const registrationAreas = uniqueAreaIds.map((areaId) =>
+        registrationAreaRepository.create({
           registration_id: savedRegistration.id,
           area_id: areaId,
         }),
       );
 
-      await this.registrationBlockchainAreaRepository.save(registrationAreas);
-    }
+      await registrationAreaRepository.save(registrationAreas);
 
-    return savedRegistration;
+      return savedRegistration;
+    });
   }
 
   async getAllRegistrations(): Promise<Registration[]> {
-    return await this.registrationRepository.find({
-      relations: ['blockchainAreas', 'blockchainAreas.blockchainArea'],
+    return this.registrationRepository.find({
+      relations: [
+        'blockchainAreas',
+        'blockchainAreas.blockchainArea',
+        'campaign',
+      ],
       order: {
         id: 'DESC',
       },
     });
   }
 
-  async deleteRegistration(id: number): Promise<void> {
-    // First, delete related blockchain area associations
-    await this.registrationBlockchainAreaRepository.delete({
-      registration_id: id,
+  async getRegistrationById(id: number): Promise<Registration> {
+    const registration = await this.registrationRepository.findOne({
+      where: { id },
+      relations: [
+        'blockchainAreas',
+        'blockchainAreas.blockchainArea',
+        'campaign',
+      ],
     });
 
-    // Then delete the registration
-    const result = await this.registrationRepository.delete(id);
-    
-    if (result.affected === 0) {
-      throw new BadRequestException('Registration not found');
+    if (!registration) {
+      throw new NotFoundException('Registration not found');
+    }
+
+    return registration;
+  }
+
+  async updateRegistrationStatus(
+    id: number,
+    status: RegistrationStatus,
+  ): Promise<Registration> {
+    const registration = await this.getRegistrationById(id);
+    registration.status = status;
+    return this.registrationRepository.save(registration);
+  }
+
+  async deleteRegistration(id: number): Promise<void> {
+    await this.dataSource.transaction(async (manager) => {
+      await manager.getRepository(RegistrationBlockchainArea).delete({
+        registration_id: id,
+      });
+
+      const result = await manager.getRepository(Registration).delete(id);
+
+      if (!result.affected) {
+        throw new BadRequestException('Registration not found');
+      }
+    });
+  }
+
+  private async findActiveCampaign(
+    repository: Repository<RecruitmentCampaign>,
+  ): Promise<RecruitmentCampaign | null> {
+    const now = new Date();
+
+    return repository
+      .createQueryBuilder('campaign')
+      .setLock('pessimistic_write')
+      .where('campaign.status = :status', {
+        status: RecruitmentCampaignStatus.OPEN,
+      })
+      .andWhere('campaign.is_visible = TRUE')
+      .andWhere('(campaign.opens_at IS NULL OR campaign.opens_at <= :now)', {
+        now,
+      })
+      .andWhere('(campaign.closes_at IS NULL OR campaign.closes_at >= :now)', {
+        now,
+      })
+      .getOne();
+  }
+
+  private assertCampaignAcceptsInternalRegistration(
+    campaign: RecruitmentCampaign,
+  ): void {
+    const now = new Date();
+    const isOpen =
+      campaign.status === RecruitmentCampaignStatus.OPEN &&
+      campaign.is_visible &&
+      (!campaign.opens_at || campaign.opens_at <= now) &&
+      (!campaign.closes_at || campaign.closes_at >= now);
+
+    if (!isOpen) {
+      throw new BadRequestException('Recruitment campaign is not open');
+    }
+
+    if (campaign.external_form_url) {
+      throw new BadRequestException(
+        'This recruitment campaign only accepts applications through its external form',
+      );
     }
   }
 }

@@ -17,6 +17,8 @@ import { RegistrationsModule } from './registrations/registrations.module';
 import { BlockchainAreasModule } from './blockchain_areas/blockchain_areas.module';
 import { UploadModule } from './shared/upload/upload.module';
 import { BlogsModule } from './blogs/blogs.module';
+import { SiteContentModule } from './site-content/site-content.module';
+import { RecruitmentCampaignsModule } from './recruitment-campaigns/recruitment-campaigns.module';
 @Module({
   imports: [
     // Config module để đọc .env
@@ -60,6 +62,8 @@ import { BlogsModule } from './blogs/blogs.module';
     BlockchainAreasModule,
     UploadModule,
     BlogsModule,
+    SiteContentModule,
+    RecruitmentCampaignsModule,
   ],
   controllers: [AppController],
   providers: [

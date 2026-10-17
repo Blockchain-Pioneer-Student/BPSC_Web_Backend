@@ -1,7 +1,11 @@
-import { Controller, Get, Post, Body } from '@nestjs/common';
+import { Controller, Get, Post, Body, UseGuards } from '@nestjs/common';
 import { BlockchainAreasService } from './blockchain_areas.service';
 import { BlockchainArea } from './entity/blockchain_areas.entity';
 import { Public } from '../core/auth/decorators/public.decorator';
+import { Roles } from '../core/auth/decorators/roles.decorator';
+import { JwtAuthGuard } from '../core/auth/guards/jwt-auth.guard';
+import { RolesGuard } from '../core/auth/guards/roles.guard';
+import { CreateBlockchainAreaDto } from './dto/create-blockchain-area.dto';
 
 @Controller('blockchain-areas')
 export class BlockchainAreasController {
@@ -27,9 +31,10 @@ export class BlockchainAreasController {
     };
   }
 
-  @Public()
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('admin')
   @Post('create')
-  async createBlockchainArea(@Body() body: { name: string }): Promise<{
+  async createBlockchainArea(@Body() body: CreateBlockchainAreaDto): Promise<{
     success: boolean;
     message: string;
     data: BlockchainArea;
@@ -45,7 +50,8 @@ export class BlockchainAreasController {
     };
   }
 
-  @Public()
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('admin')
   @Post('init')
   async initBlockchainAreas(): Promise<{
     success: boolean;

@@ -19,7 +19,7 @@ export class BlockchainAreasService {
   }
 
   async createBlockchainArea(name: string): Promise<BlockchainArea> {
-    const area = this.blockchainAreaRepository.create({ name });
+    const area = this.blockchainAreaRepository.create({ name: name.trim() });
     return await this.blockchainAreaRepository.save(area);
   }
 }

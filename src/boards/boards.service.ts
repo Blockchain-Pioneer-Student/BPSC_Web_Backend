@@ -13,13 +13,25 @@ export class BoardsService {
   ) {}
 
   async create(createBoardDto: CreateBoardDto): Promise<Board> {
-    const board = this.boardRepository.create(createBoardDto);
+    const board = this.boardRepository.create({
+      ...createBoardDto,
+      display_order: createBoardDto.display_order ?? 1000,
+    });
     return await this.boardRepository.save(board);
   }
 
   async findAll(): Promise<Board[]> {
     return await this.boardRepository.find({
+      where: { is_visible: true },
       relations: ['members'],
+      order: { display_order: 'ASC', id: 'ASC' },
+    });
+  }
+
+  async findAllForAdmin(): Promise<Board[]> {
+    return await this.boardRepository.find({
+      relations: ['members'],
+      order: { display_order: 'ASC', id: 'ASC' },
     });
   }
 

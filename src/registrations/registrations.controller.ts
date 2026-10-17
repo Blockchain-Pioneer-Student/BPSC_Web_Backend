@@ -1,7 +1,8 @@
 /* eslint-disable prettier/prettier */
-import { Controller, Post, Get, Delete, Body, Param, UsePipes, ValidationPipe, ParseIntPipe } from '@nestjs/common';
+import { Controller, Post, Get, Patch, Delete, Body, Param, UsePipes, ValidationPipe, ParseIntPipe } from '@nestjs/common';
 import { RegistrationsService } from './registrations.service';
 import { CreateRegistrationDto } from './dto/create-registration.dto';
+import { UpdateRegistrationStatusDto } from './dto/update-registration-status.dto';
 import { Registration } from './entity/registrations.entity';
 import { Public } from '../core/auth/decorators/public.decorator';
 import { JwtAuthGuard } from '../core/auth/guards/jwt-auth.guard';
@@ -53,6 +54,23 @@ export class RegistrationsController {
       data: registrations,
       count: registrations.length,
     };
+  }
+
+  @UseGuards(RolesGuard)
+  @Roles('admin')
+  @Get(':id')
+  async getRegistrationById(@Param('id', ParseIntPipe) id: number) {
+    return this.registrationsService.getRegistrationById(id);
+  }
+
+  @UseGuards(RolesGuard)
+  @Roles('admin')
+  @Patch(':id/status')
+  async updateRegistrationStatus(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() dto: UpdateRegistrationStatusDto,
+  ) {
+    return this.registrationsService.updateRegistrationStatus(id, dto.status);
   }
 
   @UseGuards(RolesGuard)

@@ -6,12 +6,14 @@ import { Registration } from './entity/registrations.entity';
 import { RegistrationBlockchainArea } from './entity/registration_blockchain_areas.entity';
 import { BlockchainArea } from '../blockchain_areas/entity/blockchain_areas.entity';
 import { AuthModule } from 'src/core/auth/auth.module';
+import { RecruitmentCampaign } from '../recruitment-campaigns/entity/recruitment-campaign.entity';
 @Module({
   imports: [
     TypeOrmModule.forFeature([
       Registration,
       RegistrationBlockchainArea,
       BlockchainArea,
+      RecruitmentCampaign,
     ]),
     AuthModule,
   ],

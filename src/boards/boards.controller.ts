@@ -25,6 +25,12 @@ export class BoardsController {
   }
 
   @Roles('admin')
+  @Get('admin/all')
+  findAllForAdmin() {
+    return this.boardsService.findAllForAdmin();
+  }
+
+  @Roles('admin')
   @Get(':id')
   findOne(@Param('id') id: string) {
     return this.boardsService.findOne(+id);
