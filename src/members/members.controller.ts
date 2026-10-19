@@ -105,6 +105,18 @@ export class MembersController {
     return this.membersService.findAllActive(sort, limitNum, search);
   }
 
+  @Public()
+  @Get('board/:id')
+  findByBoard(@Param('id') id: string) {
+    return this.membersService.findByBoardId(parseInt(id, 10));
+  }
+
+  @Public()
+  @Get('role/:id')
+  findByRole(@Param('id') id: string) {
+    return this.membersService.findByRoleId(parseInt(id, 10));
+  }
+
   @Roles('admin')
   @Get('roles')
   findAllRoles() {
