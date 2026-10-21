@@ -7,11 +7,14 @@ import { MemberSocial } from './entity/member_socials.entity';
 import { CreateMemberDto } from './dto/create-member.dto';
 import { UpdateMemberDto } from './dto/update-member.dto';
 import { MembersRepository } from './members.repository';
-import { v2 as cloudinary } from 'cloudinary';
+import { UploadService } from '../shared/upload/upload.service';
 
 @Injectable()
 export class MembersService {
-  constructor(private readonly membersRepository: MembersRepository) {}
+  constructor(
+    private readonly membersRepository: MembersRepository,
+    private readonly uploadService: UploadService,
+  ) {}
 
   async findAll(
     sort?: string,
@@ -39,20 +42,13 @@ export class MembersService {
 
     // Handle image upload if provided
     if (image_file) {
-      try {
-        const uploadResult = await cloudinary.uploader.upload(
-          image_file.path,
-          {
-            folder: 'bpsclub/members',
-            resource_type: 'image',
-            public_id: `member_${Date.now()}`,
-          }
-        );
-        avatarUrl = uploadResult.secure_url;
-      } catch (error) {
-        console.error('Error uploading member image:', error);
-        throw new Error('Failed to upload member image');
-      }
+      const uploadResult = await this.uploadService.uploadSingleFile(
+        image_file.path,
+        image_file.originalname,
+        image_file.size,
+        image_file.mimetype,
+      );
+      avatarUrl = uploadResult.url;
     }
 
     // Handle role_name if provided (find existing or create new)
@@ -102,20 +98,13 @@ export class MembersService {
 
     // Handle image upload if provided
     if (image_file) {
-      try {
-        const uploadResult = await cloudinary.uploader.upload(
-          image_file.path,
-          {
-            folder: 'bpsclub/members',
-            resource_type: 'image',
-            public_id: `member_${id}_${Date.now()}`,
-          }
-        );
-        avatarUrl = uploadResult.secure_url;
-      } catch (error) {
-        console.error('Error uploading member image:', error);
-        throw new Error('Failed to upload member image');
-      }
+      const uploadResult = await this.uploadService.uploadSingleFile(
+        image_file.path,
+        image_file.originalname,
+        image_file.size,
+        image_file.mimetype,
+      );
+      avatarUrl = uploadResult.url;
     }
 
     // Handle role_name if provided (find existing or create new)

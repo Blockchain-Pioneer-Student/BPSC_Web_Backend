@@ -24,7 +24,10 @@ import { Roles } from '../core/auth/decorators/roles.decorator';
 import { Public } from '../core/auth/decorators/public.decorator';
 import { BlogsService } from './blogs.service';
 import { Blog } from './entity/blogs.entity';
-import { parseBlogFormData } from './dto/blog-form-data.helper';
+import {
+  parseBlogFormData,
+  parseBlogUpdateFormData,
+} from './dto/blog-form-data.helper';
 import { PublishedBlogDto } from './dto/published-blog.dto';
 @Controller('blogs')
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -98,7 +101,7 @@ export class BlogsController {
       mimetype: string;
     },
   ): Promise<any> {
-    const updateBlogDto = parseBlogFormData(body, thumbnail_image);
+    const updateBlogDto = parseBlogUpdateFormData(body, thumbnail_image);
     return await this.blogsService.updateBlogByUuid(uuid, updateBlogDto);
   }
 

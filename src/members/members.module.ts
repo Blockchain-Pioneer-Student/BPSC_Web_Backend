@@ -9,12 +9,14 @@ import { MembersService } from './members.service';
 import { MembersRepository } from './members.repository';
 import { BoardsModule } from '../boards/boards.module';
 import { AuthModule } from 'src/core/auth/auth.module';
+import { UploadModule } from '../shared/upload/upload.module';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([Member, MemberRole, MemberSocial]),
     BoardsModule,
     AuthModule,
+    UploadModule,
   ],
   controllers: [MembersController],
   providers: [MembersService, MembersRepository],

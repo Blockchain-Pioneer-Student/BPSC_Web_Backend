@@ -39,6 +39,10 @@ export class UpdateEventDto {
   @IsOptional()
   notion_content?: string;
 
+  @IsString()
+  @IsOptional()
+  image?: string;
+
   @IsOptional()
   @Transform(({ value }) => {
     if (value === 'true' || value === true) return true;

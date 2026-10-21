@@ -92,6 +92,17 @@ export class BlogsService {
         }
     }
     async updateBlogByUuid(uuid: string, updateBlogDto: UpdateBlogDto): Promise<Blog> {
+        if (updateBlogDto.thumbnail_image) {
+            const uploadResult = await this.uploadService.uploadSingleFile(
+                updateBlogDto.thumbnail_image.path,
+                updateBlogDto.thumbnail_image.originalname,
+                updateBlogDto.thumbnail_image.size,
+                updateBlogDto.thumbnail_image.mimetype,
+            );
+            updateBlogDto.thumbnail_url = uploadResult.url;
+        }
+
+        delete updateBlogDto.thumbnail_image;
         return await this.blogsRepository.updateBlog(uuid, updateBlogDto);
     }
     async deleteBlogByUuid(uuid: string): Promise<void> {

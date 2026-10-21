@@ -3,6 +3,12 @@
 import { CreateEventDto } from './create-event.dto';
 import { UpdateEventDto } from './update-event.dto';
 
+function parseJsonArray(value: unknown, fallback: any[] | undefined): any[] | undefined {
+  if (Array.isArray(value)) return value;
+  if (value === undefined || value === '') return fallback;
+  return JSON.parse(String(value));
+}
+
 export function parseEventFormData(
   data: any,
   image_file?: any,
@@ -19,11 +25,11 @@ export function parseEventFormData(
     notion_content: data.notion_content,
     is_visible: data.is_visible,
     category_id: data.category_id,
-    schedules: data.schedules ? JSON.parse(String(data.schedules)) : [],
-    speakers: data.speakers ? JSON.parse(String(data.speakers)) : [],
+    schedules: parseJsonArray(data.schedules, []),
+    speakers: parseJsonArray(data.speakers, []),
     image_file,
     speaker_avatar_images,
-    speaker_avatar_mapping: data.speaker_avatar_mapping ? JSON.parse(String(data.speaker_avatar_mapping)) : undefined,
+    speaker_avatar_mapping: parseJsonArray(data.speaker_avatar_mapping, undefined),
   };
 }
 
@@ -41,12 +47,13 @@ export function parseEventUpdateFormData(
     excerpt: data.excerpt,
     registration_link: data.registration_link,
     notion_content: data.notion_content,
+    image: data.image,
     is_visible: data.is_visible,
     category_id: data.category_id,
-    schedules: data.schedules ? JSON.parse(String(data.schedules)) : undefined,
-    speakers: data.speakers ? JSON.parse(String(data.speakers)) : undefined,
+    schedules: parseJsonArray(data.schedules, undefined),
+    speakers: parseJsonArray(data.speakers, undefined),
     image_file,
     speaker_avatar_images,
-    speaker_avatar_mapping: data.speaker_avatar_mapping ? JSON.parse(String(data.speaker_avatar_mapping)) : undefined,
+    speaker_avatar_mapping: parseJsonArray(data.speaker_avatar_mapping, undefined),
   };
 }

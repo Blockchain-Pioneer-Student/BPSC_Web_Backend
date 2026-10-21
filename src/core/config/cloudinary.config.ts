@@ -7,10 +7,15 @@ import { Injectable } from '@nestjs/common';
 @Injectable()
 export class CloudinaryConfig {
   constructor(private readonly configService: ConfigService) {
+    const apiSecret =
+      this.configService.get<string>('CLOUDINARY_API_SECRET') ??
+      this.configService.get<string>('CLOUDINARY_SECRET_KEY');
+
     cloudinary.config({
       cloud_name: this.configService.get<string>('CLOUDINARY_CLOUD_NAME'),
       api_key: this.configService.get<string>('CLOUDINARY_API_KEY'),
-      api_secret: this.configService.get<string>('CLOUDINARY_SECRET_KEY'),
+      api_secret: apiSecret,
+      secure: true,
     });
   }
 }
