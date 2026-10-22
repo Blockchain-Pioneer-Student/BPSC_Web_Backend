@@ -23,10 +23,21 @@ export class TokensService {
     private readonly refreshTokenRepository: Repository<RefreshToken>,
   ) {}
 
+  private getEnv(name: string, fallback = ''): string {
+    return (
+      this.configService
+        .get<string>(name)
+        ?.trim()
+        .replace(/^['"]|['"]$/g, '') || fallback
+    );
+  }
+
   /**
    * Generate access token with user information
    */
   generateAccessToken(user: User): string {
+    const secret = this.getEnv('JWT_SECRET');
+    const expiresIn = this.getEnv('JWT_EXPIRES_IN', '15m');
     const payload: JwtPayload = {
       sub: user.id,
       username: user.username,
@@ -37,8 +48,8 @@ export class TokensService {
     };
 
     return this.jwtService.sign(payload, {
-      secret: this.configService.get<string>('JWT_SECRET'),
-      expiresIn: this.configService.get<string>('JWT_EXPIRES_IN') || '15m',
+      secret,
+      expiresIn,
     } as any);
   }
 
@@ -46,14 +57,16 @@ export class TokensService {
    * Generate refresh token
    */
   async generateRefreshToken(user: User, userAgent?: string): Promise<string> {
+    const secret = this.getEnv('JWT_REFRESH_SECRET');
+    const expiresIn = this.getEnv('JWT_REFRESH_EXPIRES_IN', '7d');
     const payload = {
       sub: user.id,
       type: 'refresh',
     };
 
     const refreshToken = this.jwtService.sign(payload, {
-      secret: this.configService.get<string>('JWT_REFRESH_SECRET'),
-      expiresIn: this.configService.get<string>('JWT_REFRESH_EXPIRES_IN') || '7d',
+      secret,
+      expiresIn,
     } as any);
 
     // Save refresh token to database
@@ -110,7 +123,9 @@ export class TokensService {
       await this.refreshTokenRepository.delete(deleteCondition);
 
       // Calculate expiration date
-      const expiresIn = this.configService.get<number>('JWT_REFRESH_EXPIRES_IN_SECONDS') || 7 * 24 * 60 * 60; // 7 days in seconds
+      const expiresIn =
+        Number(this.getEnv('JWT_REFRESH_EXPIRES_IN_SECONDS', '604800')) ||
+        7 * 24 * 60 * 60;
       const expiresAt = new Date(Date.now() + expiresIn * 1000);
 
       // Create new refresh token entry
@@ -132,7 +147,7 @@ export class TokensService {
   verifyAccessToken(token: string): JwtPayload {
     try {
       const payload = this.jwtService.verify(token, {
-        secret: this.configService.get<string>('JWT_SECRET'),
+        secret: this.getEnv('JWT_SECRET'),
       });
       return payload as JwtPayload;
     } catch (error: any) {
@@ -164,7 +179,7 @@ export class TokensService {
     try {
       // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
       const payload = this.jwtService.verify(token, {
-        secret: this.configService.get<string>('JWT_REFRESH_SECRET'),
+        secret: this.getEnv('JWT_REFRESH_SECRET'),
       });
       const typedPayload = payload as { sub: number; type: string };
 
@@ -251,7 +266,7 @@ export class TokensService {
    * Get token expiration time in seconds
    */
   getAccessTokenExpiresIn(): number {
-    const expiresIn = this.configService.get<string>('JWT_EXPIRES_IN') || '15m';
+    const expiresIn = this.getEnv('JWT_EXPIRES_IN', '15m');
     
     // Convert time string to seconds
     if (expiresIn.endsWith('m')) {
