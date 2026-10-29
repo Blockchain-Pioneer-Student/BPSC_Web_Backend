@@ -18,12 +18,14 @@ async function bootstrap() {
   // Enable cookie parser for HTTP-only cookies
   app.use(cookieParser());
 
-  const localUploadsDir = path.resolve(process.cwd(), 'uploads');
-  fs.mkdirSync(localUploadsDir, { recursive: true });
-  app.use('/uploads', express.static(localUploadsDir));
-
   const isProduction =
     configService.get<string>('NODE_ENV') === 'production';
+
+  if (!isProduction) {
+    const localUploadsDir = path.resolve(process.cwd(), 'uploads');
+    fs.mkdirSync(localUploadsDir, { recursive: true });
+    app.use('/uploads', express.static(localUploadsDir));
+  }
 
   // Enable CORS for frontend with environment-based origins
   const allowedOrigins = configService

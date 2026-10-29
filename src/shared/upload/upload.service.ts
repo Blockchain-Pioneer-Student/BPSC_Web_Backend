@@ -71,6 +71,7 @@ export class UploadService {
         },
       };
     } catch (error) {
+      this.cleanupTempFile(filePath);
       console.error('Error storing uploaded image:', error);
       throw new Error('Failed to store uploaded image');
     }
@@ -104,6 +105,14 @@ export class UploadService {
       .toLowerCase();
 
     if (configuredMode === 'local' || configuredMode === 'cloudinary') {
+      if (
+        configuredMode === 'local' &&
+        this.configService.get<string>('NODE_ENV') === 'production'
+      ) {
+        throw new Error(
+          'Local upload storage is not supported in production; use Cloudinary.',
+        );
+      }
       return configuredMode;
     }
 
