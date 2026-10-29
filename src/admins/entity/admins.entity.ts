@@ -15,12 +15,12 @@ import { User } from 'src/users/entity/users.entity';
 @Entity('admins')
 export class Admin {
     @PrimaryGeneratedColumn()
-    id: number;
+    id?: number;
     @Column({ type: 'varchar', length: 150, nullable: false })
-    full_name: string;
+    full_name?: string;
     @Column({ type: 'varchar', length: 150, nullable: false, unique: true })
-    phone_number: string;
+    phone_number?: string;
     @OneToOne(() => User, { nullable: false })
     @JoinColumn({ name: 'user_id' })
-    user: User;
+    user?: User;
 }

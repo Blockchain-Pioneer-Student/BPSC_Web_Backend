@@ -19,7 +19,7 @@ const SITE_CONTENT_FIELDS: Record<SiteContentKey, readonly string[]> = {
   home_events: ['title', 'view_all_label', 'view_all_url'],
   home_partners: ['title', 'view_all_label', 'view_all_url'],
   home_cta: ['title', 'description', 'primary_label', 'primary_url'],
-  about_hero: ['title', 'subtitle', 'cta_label', 'cta_url'],
+  about_hero: ['title', 'subtitle', 'cta_label', 'cta_url', 'background_image_url'],
   about_mission: ['title', 'description', 'item_1', 'item_2', 'item_3', 'item_4'],
   about_vision: [
     'title', 'description',
@@ -48,14 +48,14 @@ const SITE_CONTENT_FIELDS: Record<SiteContentKey, readonly string[]> = {
     'primary_label', 'primary_url',
     'secondary_label', 'secondary_url',
   ],
-  team_hero: ['title', 'description', 'view_more_label'],
+  team_hero: ['title', 'description', 'view_more_label', 'background_image_url'],
   events_page: [
-    'hero_title', 'hero_description',
+    'hero_title', 'hero_description', 'background_image_url',
     'cta_title', 'cta_description',
     'primary_label', 'primary_url',
     'secondary_label', 'secondary_url',
   ],
-  blogs_page: ['hero_title', 'hero_description'],
+  blogs_page: ['hero_title', 'hero_description', 'background_image_url'],
   join_hero: ['title', 'description'],
   join_benefits: [
     'title', 'description',

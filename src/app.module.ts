@@ -5,7 +5,6 @@ import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import { APP_GUARD } from '@nestjs/core';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
-import { DatabaseModule } from './core/database/database.module';
 import { EventsModule } from './events/events.module';
 import { PartnersModule } from './partners/partners.module';
 import { AdminsModule } from './admins/admins.module';
@@ -19,6 +18,7 @@ import { UploadModule } from './shared/upload/upload.module';
 import { BlogsModule } from './blogs/blogs.module';
 import { SiteContentModule } from './site-content/site-content.module';
 import { RecruitmentCampaignsModule } from './recruitment-campaigns/recruitment-campaigns.module';
+import { LocalDevelopmentDatabaseService } from './core/database/local-development-database.service';
 @Module({
   imports: [
     // Config module để đọc .env
@@ -41,7 +41,9 @@ import { RecruitmentCampaignsModule } from './recruitment-campaigns/recruitment-
         type: 'postgres',
         url: configService.get<string>('DATABASE_URL'),
         entities: [__dirname + '/**/*.entity{.ts,.js}'],
-        synchronize: false, // Bật để tự động tạo bảng
+        synchronize:
+          configService.get<string>('NODE_ENV') !== 'production' &&
+          configService.get<string>('TYPEORM_SYNCHRONIZE') === 'true',
         ssl:
           process.env.NODE_ENV === 'production'
             ? { rejectUnauthorized: false }
@@ -50,7 +52,6 @@ import { RecruitmentCampaignsModule } from './recruitment-campaigns/recruitment-
       inject: [ConfigService],
     }),
     
-    DatabaseModule,
     EventsModule,
     PartnersModule,
     AdminsModule,
@@ -68,6 +69,7 @@ import { RecruitmentCampaignsModule } from './recruitment-campaigns/recruitment-
   controllers: [AppController],
   providers: [
     AppService,
+    LocalDevelopmentDatabaseService,
     {
       provide: APP_GUARD,
       useClass: ThrottlerGuard,

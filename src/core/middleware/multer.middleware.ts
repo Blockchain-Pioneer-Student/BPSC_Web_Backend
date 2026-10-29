@@ -3,11 +3,14 @@
 /* eslint-disable @typescript-eslint/no-unsafe-call */
 /* eslint-disable @typescript-eslint/no-unsafe-member-access */
 import multer from 'multer';
+import * as os from 'os';
 import * as path from 'path';
 import * as fs from 'fs';
 
 // Tạo thư mục uploads nếu chưa tồn tại
-const uploadDir = path.join(__dirname, '../../../uploads');
+const uploadDir = process.env.NODE_ENV === 'production'
+  ? path.join(os.tmpdir(), 'bpsc-uploads')
+  : path.resolve(process.cwd(), 'uploads');
 if (!fs.existsSync(uploadDir)) {
   fs.mkdirSync(uploadDir, { recursive: true });
 }
