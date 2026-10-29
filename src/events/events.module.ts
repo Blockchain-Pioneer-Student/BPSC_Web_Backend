@@ -8,7 +8,6 @@ import { EventCategory } from './entity/event_categories.entity';
 import { EventSchedule } from './entity/event_schedules.entity';
 import { EventSpeaker } from './entity/event_speakers.entity';
 import { UploadService } from '../shared/upload/upload.service';
-import { CloudinaryConfig } from '../core/config/cloudinary.config';
 import { AuthModule } from '../core/auth/auth.module';
 import { UsersModule } from '../users/users.module';
 
@@ -24,7 +23,7 @@ import { UsersModule } from '../users/users.module';
     UsersModule,
   ],
   controllers: [EventsController],
-  providers: [EventsService, EventsRepository, UploadService, CloudinaryConfig],
+  providers: [EventsService, EventsRepository, UploadService],
   exports: [EventsService, EventsRepository],
 })
 export class EventsModule {}

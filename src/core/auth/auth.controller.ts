@@ -36,10 +36,11 @@ export class AuthController {
     res.clearCookie('refresh_token');
   
     // Cross-origin cookies configuration
+    const isProduction = this.configService.get<string>('NODE_ENV') === 'production';
     const cookieConfig = {
       httpOnly: true,
-      secure: true, // Always true for production HTTPS
-      sameSite: 'none' as const, // Required for cross-origin
+      secure: isProduction,
+      sameSite: isProduction ? ('none' as const) : ('lax' as const),
       path: '/',
     };
   
@@ -125,10 +126,11 @@ export class AuthController {
       }
       
       // Cross-origin cookie config
+      const isProduction = this.configService.get<string>('NODE_ENV') === 'production';
       const cookieConfig = {
         httpOnly: true,
-        secure: true,
-        sameSite: 'none' as const,
+        secure: isProduction,
+        sameSite: isProduction ? ('none' as const) : ('lax' as const),
         path: '/',
       };
       
@@ -177,10 +179,11 @@ export class AuthController {
     }
 
     // Cross-origin cookie config
+    const isProduction = this.configService.get<string>('NODE_ENV') === 'production';
     const cookieConfig = {
       httpOnly: true,
-      secure: true,
-      sameSite: 'none' as const,
+      secure: isProduction,
+      sameSite: isProduction ? ('none' as const) : ('lax' as const),
       path: '/',
     };
 

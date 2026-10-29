@@ -5,6 +5,9 @@ import { AppModule } from './app.module';
 import { ValidationPipe } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import cookieParser from 'cookie-parser';
+import express from 'express';
+import * as fs from 'fs';
+import * as path from 'path';
 import type { NextFunction, Request, Response } from 'express';
 
 async function bootstrap() {
@@ -14,6 +17,10 @@ async function bootstrap() {
 
   // Enable cookie parser for HTTP-only cookies
   app.use(cookieParser());
+
+  const localUploadsDir = path.resolve(process.cwd(), 'uploads');
+  fs.mkdirSync(localUploadsDir, { recursive: true });
+  app.use('/uploads', express.static(localUploadsDir));
 
   const isProduction =
     configService.get<string>('NODE_ENV') === 'production';

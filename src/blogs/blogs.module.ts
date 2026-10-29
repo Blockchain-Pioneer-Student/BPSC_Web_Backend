@@ -2,7 +2,6 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { UploadService } from '../shared/upload/upload.service';
-import { CloudinaryConfig } from '../core/config/cloudinary.config';
 import { AuthModule } from '../core/auth/auth.module';
 import { BlogsController } from './blogs.controller';
 import { BlogsService } from './blogs.service';
@@ -16,7 +15,7 @@ import { BlogTag } from './entity/blog_tags.entity';
         AuthModule,
     ],
     controllers: [BlogsController],
-    providers: [BlogsService, BlogsRepository, UploadService, CloudinaryConfig],
+    providers: [BlogsService, BlogsRepository, UploadService],
     exports: [BlogsService, BlogsRepository
     ]
 })

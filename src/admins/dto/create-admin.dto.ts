@@ -10,24 +10,24 @@ export class CreateAdminDto {
   @IsString()
   @IsNotEmpty()
   @Length(2, 150)
-  full_name: string;
+  full_name!: string;
 
   @IsString()
   @IsNotEmpty()
   @Length(10, 15)
-  phone_number: string;
+  phone_number!: string;
 
   @IsString()
   @IsNotEmpty()
   @Length(3, 100)
-  username: string;
+  username!: string;
 
   @IsEmail()
   @IsNotEmpty()
-  email: string;
+  email!: string;
 
   @IsString()
   @IsNotEmpty()
   @MinLength(6)
-  password: string;
+  password!: string;
 }
