@@ -105,7 +105,7 @@ async function bootstrap() {
   );
 
   const port = configService.get<number>('PORT') || 10000; // Use PORT from environment or default to 10000
-  const host = isProduction ? '0.0.0.0' : 'localhost';
+  const host = isProduction ? '0.0.0.0' : '::'; // '::' accepts both IPv4 and IPv6 localhost in dev
 
   await app.listen(port, host);
 
