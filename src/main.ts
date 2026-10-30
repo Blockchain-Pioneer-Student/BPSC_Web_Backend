@@ -37,6 +37,9 @@ async function bootstrap() {
     'http://localhost:8081',
     'https://bpsclub-admin-dashboard.vercel.app',
     'https://web-clb-blockchain-utc.vercel.app',
+    'https://bpsclub.com',
+    'https://admin.bpsclub.com',
+    'https://www.bpsclub.com'
   ];
 
   // CSRF-style browser origin check for cookie-authenticated mutations.
