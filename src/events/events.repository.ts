@@ -184,7 +184,8 @@ export class EventsRepository {
   }
 
   async createEvent(dto: CreateEventDto): Promise<Event> {
-    const schedules = typeof dto.schedules === 'string' ? JSON.parse(dto.schedules) : (dto.schedules ?? []);
+    const schedules = (typeof dto.schedules === 'string' ? JSON.parse(dto.schedules) : (dto.schedules ?? []))
+      .filter((schedule: any) => schedule?.title?.trim() && schedule?.time?.trim());
     const speakers = typeof dto.speakers === 'string' ? JSON.parse(dto.speakers) : (dto.speakers ?? []);
 
     // Create event data without relations

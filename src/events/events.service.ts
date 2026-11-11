@@ -19,6 +19,25 @@ export class EventsService {
     private readonly uploadService: UploadService,
   ) { }
 
+  private async createUniqueSlug(title: string, date: string): Promise<string> {
+    const base = `${title
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/đ/gi, 'd')
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-|-$/g, '')
+      .slice(0, 220) || 'event'}-${date}`;
+    let slug = base;
+    let suffix = 2;
+
+    while (await this.eventsRepository.findEventBySlug(slug)) {
+      slug = `${base}-${suffix++}`;
+    }
+
+    return slug;
+  }
+
   async getAllEvents(
     sort?: string,
     limit?: number,
@@ -197,6 +216,8 @@ export class EventsService {
 
   async createEvent(createEventDto: CreateEventDto): Promise<any> {
     try {
+      createEventDto.slug = createEventDto.slug?.trim() ||
+        await this.createUniqueSlug(createEventDto.title, createEventDto.date);
       let imageUrl: string | undefined;
 
       // If an image file is provided, upload it and get the URL
@@ -265,7 +286,7 @@ export class EventsService {
       return await this.eventsRepository.createEvent(newEvent);
     } catch (error) {
       console.error('Error creating event:', error);
-      throw new Error('Failed to create event');
+      throw error;
     }
   }
 

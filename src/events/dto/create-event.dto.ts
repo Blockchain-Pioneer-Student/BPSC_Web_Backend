@@ -2,7 +2,7 @@ import {
   IsString,
   IsNotEmpty,
   IsOptional,
-  IsNumberString,
+  IsInt,
   IsDateString,
 } from 'class-validator';
 import { Transform, Type } from 'class-transformer';
@@ -13,8 +13,9 @@ export class CreateEventDto {
   title: string;
 
   @IsString()
+  @IsOptional()
   @IsNotEmpty()
-  slug: string;
+  slug?: string;
 
   @IsDateString()
   @IsNotEmpty()
@@ -49,12 +50,12 @@ export class CreateEventDto {
   @Type(() => Boolean)
   is_visible?: boolean;
 
-  @IsNumberString()
+  @IsInt()
   @IsOptional()
   @Transform(({ value }) => {
     if (value === undefined || value === '' || value === null) return undefined;
     if (typeof value === 'string') {
-      return parseInt(value, 10);
+      return Number(value);
     }
     return value as number;
   })
